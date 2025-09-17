@@ -14,10 +14,10 @@ int cns(int argc, char* argv[])
 
         // constructor - reads in parameters from inputs file
         //             - sizes multilevel arrays and data structures
-        /* AmrCoreCNS amr_core_adv; */
+        AmrCoreCNS amr_core_adv;
 
         // initialize AMR data
-        /* amr_core_adv.InitData(); */
+        amr_core_adv.InitData();
 
         // advance solution to final time
         /* amr_core_adv.Evolve(); */

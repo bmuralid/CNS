@@ -2,6 +2,7 @@ set (SRCDIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set (CNS_OBJECTS
     ${SRCDIR}/cns.cpp
+    ${SRCDIR}/AmrCoreCNS.cpp
     )
 
 set (OBJECTS_SERIAL  ${CNS_OBJECTS} CACHE INTERNAL "Objects for serial build")
