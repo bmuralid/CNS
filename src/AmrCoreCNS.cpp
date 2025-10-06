@@ -8,6 +8,7 @@
 #include <AMReX_PhysBCFunct.H>
 #include <AMReX_Interpolater.H>
 #include <AMReX_Interp_C.H>
+#include <cmath>
 
 #include <AmrCoreCNS.H>
 #include <Kernels.H>
@@ -151,6 +152,34 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
         [=] AMREX_GPU_DEVICE (Box const& tbx)
         {
             initdata(tbx, fab, problo, dx);
+        });
+    }
+
+    // Initialize phi as signed distance to a sphere centered at (0,0,0) with radius 0.5
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(phi[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Array4<Real> pfab = phi[lev][mfi].array();
+        const Box& box = mfi.tilebox();
+
+        amrex::ParallelFor(box,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            const Real x = problo[0] + (static_cast<Real>(i) + Real(0.5)) * dx[0];
+#if (AMREX_SPACEDIM >= 2)
+            const Real y = problo[1] + (static_cast<Real>(j) + Real(0.5)) * dx[1];
+#else
+            const Real y = Real(0.0);
+#endif
+#if (AMREX_SPACEDIM == 3)
+            const Real z = problo[2] + (static_cast<Real>(k) + Real(0.5)) * dx[2];
+#else
+            const Real z = Real(0.0);
+#endif
+            const Real r = std::sqrt(x*x + y*y + z*z);
+            pfab(i,j,k,0) = r - Real(0.5);
         });
     }
 }
