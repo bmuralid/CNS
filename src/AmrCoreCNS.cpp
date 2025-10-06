@@ -528,10 +528,36 @@ void
 AmrCoreCNS::WritePlotFile () const
 {
     const std::string& plotfilename = PlotFileName(istep[0]);
-    const auto& mf = PlotFileMF();
-    const auto& varnames = PlotFileVarNames();
 
-    amrex::WriteMultiLevelPlotfile(plotfilename, finest_level+1, mf, varnames,
+    // Build per-level MultiFabs that include qprims components plus phi as the last component
+    Vector<MultiFab> out_mf;
+    out_mf.reserve(finest_level+1);
+
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        const int ncomp_q = qprims[lev].nComp();
+        const int ncomp_out = ncomp_q + 1; // append phi
+        MultiFab tmp(grids[lev], dmap[lev], ncomp_out, 0);
+
+        // copy qprims into [0, ncomp_q)
+        MultiFab::Copy(tmp, qprims[lev], 0, 0, ncomp_q, 0);
+        // copy phi into last component
+        MultiFab::Copy(tmp, phi[lev], 0, ncomp_q, 1, 0);
+
+        out_mf.emplace_back(std::move(tmp));
+    }
+
+    // Build pointers vector expected by WriteMultiLevelPlotfile
+    Vector<const MultiFab*> mf_ptrs;
+    mf_ptrs.reserve(out_mf.size());
+    for (auto& mf : out_mf) {
+        mf_ptrs.push_back(&mf);
+    }
+
+    // Variable names: existing qprims names + phi
+    auto varnames = PlotFileVarNames();
+    varnames.push_back("phi");
+
+    amrex::WriteMultiLevelPlotfile(plotfilename, finest_level+1, mf_ptrs, varnames,
                                    Geom(), t_new[0], istep, refRatio());
 }
 
