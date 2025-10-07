@@ -1,6 +1,7 @@
 set (SRCDIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set (CNS_OBJECTS
+    ${SRCDIR}/initEB.cpp
     ${SRCDIR}/cns.cpp
     ${SRCDIR}/AmrCoreCNS.cpp
     )

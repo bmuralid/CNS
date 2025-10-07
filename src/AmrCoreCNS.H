@@ -8,6 +8,7 @@
 #include <AMReX_AmrCore.H>
 #include <AMReX_FluxRegister.H>
 #include <AMReX_BCRec.H>
+#include <AMReX_EBFabFactory.H>
 
 class AmrCoreCNS
     : public amrex::AmrCore
@@ -93,6 +94,7 @@ private:
     amrex::Vector<amrex::MultiFab> phi;
     amrex::Vector<amrex::MultiFab> rhs;
     amrex::Vector<amrex::MultiFab> dq;
+    amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory> > ebfactory;
 
     amrex::Vector<amrex::BCRec> bcs;
     // stores fluxes at coarse-fine interface for synchronization

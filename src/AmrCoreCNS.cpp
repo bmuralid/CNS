@@ -8,6 +8,9 @@
 #include <AMReX_PhysBCFunct.H>
 #include <AMReX_Interpolater.H>
 #include <AMReX_Interp_C.H>
+#include <AMReX_EBFabFactory.H>
+#include <AMReX_EB2.H>
+#include <AMReX_EB2_IF.H>
 #include <cmath>
 
 #include <AmrCoreCNS.H>
@@ -43,6 +46,7 @@ AmrCoreCNS::AmrCoreCNS ()
     qprims.resize(nlevs_max);
     phi.resize(nlevs_max);
     rhs.resize(nlevs_max);
+    ebfactory.resize(nlevs_max);
 
     int bc_lo[AMREX_SPACEDIM];
     int bc_hi[AMREX_SPACEDIM];
@@ -182,6 +186,15 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
             pfab(i,j,k,0) = r - Real(0.5);
         });
     }
+
+    // Build EB geometry (sphere) and factory
+    {
+        // EB2::SphereIF sphere(Real(0.5), {AMREX_D_DECL(Real(0.0), Real(0.0), Real(0.0))}, false);
+        // auto gshop = EB2::makeShop(sphere);
+        // EB2::Build(gshop, Geom(lev), 0, 0, 4);
+        const Vector<int> ng_ebs{1,1,1};
+        ebfactory[lev] = amrex::makeEBFabFactory(Geom(lev), ba, dm, ng_ebs, EBSupport::full);
+    }
 }
 
 // Make a new level using provided BoxArray and DistributionMapping and
@@ -212,6 +225,15 @@ AmrCoreCNS::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
     }
 
     FillCoarsePatch(lev, 2, time, qprims[lev], 0, ncomp_prims); // only need to copy over qprims
+
+    // Build EB geometry (sphere) and factory on this level as well
+    {
+        // EB2::SphereIF sphere(Real(0.5), {AMREX_D_DECL(Real(0.0), Real(0.0), Real(0.0))}, false);
+        // auto gshop = EB2::makeShop(sphere);
+        // EB2::Build(gshop, Geom(lev), 0, 0, 4);
+        const Vector<int> ng_ebs{1,1,1};
+        ebfactory[lev] = amrex::makeEBFabFactory(Geom(lev), ba, dm, ng_ebs, EBSupport::full);
+    }
 }
 
 // Remake an existing level using provided BoxArray and DistributionMapping and
@@ -529,19 +551,54 @@ AmrCoreCNS::WritePlotFile () const
 {
     const std::string& plotfilename = PlotFileName(istep[0]);
 
-    // Build per-level MultiFabs that include qprims components plus phi as the last component
+    // Build per-level MultiFabs that include qprims + phi + EB volfrac and bndry area magnitude
     Vector<MultiFab> out_mf;
     out_mf.reserve(finest_level+1);
 
     for (int lev = 0; lev <= finest_level; ++lev) {
         const int ncomp_q = qprims[lev].nComp();
-        const int ncomp_out = ncomp_q + 1; // append phi
+        const int ncomp_out = ncomp_q + 3; // phi, vfrac, barea_mag
         MultiFab tmp(grids[lev], dmap[lev], ncomp_out, 0);
 
         // copy qprims into [0, ncomp_q)
         MultiFab::Copy(tmp, qprims[lev], 0, 0, ncomp_q, 0);
-        // copy phi into last component
+        // copy phi
         MultiFab::Copy(tmp, phi[lev], 0, ncomp_q, 1, 0);
+
+        // copy EB volume fraction if available
+        if (true) {
+        /* if (ebfactory[lev]) { */
+            MultiFab::Copy(tmp, ebfactory[lev]->getVolFrac(), 0, ncomp_q+1, 1, 0);
+
+            // boundary area magnitude: sum of face area fracs as a simple scalar diagnostic
+            MultiFab barea_mag(grids[lev], dmap[lev], 1, 0);
+            barea_mag.setVal(0.0);
+//             auto area = ebfactory[lev]->getAreaFrac();
+// #ifdef AMREX_USE_OMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//             for (MFIter mfi(barea_mag,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+//                 const Box& bx = mfi.tilebox();
+//                 auto bav = barea_mag.array(mfi);
+//                 AMREX_D_TERM(auto apx = area[0]->const_array(mfi);,
+//                              auto apy = area[1]->const_array(mfi);,
+//                              auto apz = area[2]->const_array(mfi);)
+//                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+//                     Real s = Real(0.0);
+//                     s += apx(i,j,k);
+// #if (AMREX_SPACEDIM >= 2)
+//                     s += apy(i,j,k);
+// #endif
+// #if (AMREX_SPACEDIM == 3)
+//                     s += apz(i,j,k);
+// #endif
+//                     bav(i,j,k,0) = s;
+//                 });
+//             }
+            MultiFab::Copy(tmp, barea_mag, 0, ncomp_q+2, 1, 0);
+        } else {
+            tmp.setVal(0.0, ncomp_q+1, 2, 0);
+        }
 
         out_mf.emplace_back(std::move(tmp));
     }
@@ -553,9 +610,11 @@ AmrCoreCNS::WritePlotFile () const
         mf_ptrs.push_back(&mf);
     }
 
-    // Variable names: existing qprims names + phi
+    // Variable names: existing qprims names + phi + vfrac + barea_mag
     auto varnames = PlotFileVarNames();
     varnames.push_back("phi");
+    varnames.push_back("vfrac");
+    varnames.push_back("barea_mag");
 
     amrex::WriteMultiLevelPlotfile(plotfilename, finest_level+1, mf_ptrs, varnames,
                                    Geom(), t_new[0], istep, refRatio());

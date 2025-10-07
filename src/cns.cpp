@@ -1,6 +1,9 @@
 #include <cns.H>
 
 using namespace amrex;
+
+void initializeEB (const Geometry&, int, int);
+
 int cns(int argc, char* argv[])
 {
     amrex::Initialize(argc,argv);
@@ -17,6 +20,8 @@ int cns(int argc, char* argv[])
         AmrCoreCNS amr_core_adv;
 
         // initialize AMR data
+        auto max_level = amr_core_adv.maxLevel();
+        initializeEB(amr_core_adv.Geom(0), 0 , 0);
         amr_core_adv.InitData();
 
         // advance solution to final time
