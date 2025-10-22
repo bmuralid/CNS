@@ -30,16 +30,18 @@ initdata(amrex::Box const& bx, amrex::Array4<amrex::Real> const& fab,
 
                 // Initialize primitive variables: [rho, u, v, w, P, T]
                 // Simple initialization - uniform density and pressure
-                fab(i,j,k,0) = 1.0;  // density
+                fab(i,j,k,0) = 1.225;  // density
                 fab(i,j,k,1) = 0.0;  // u velocity
                 fab(i,j,k,2) = 0.0;  // v velocity
 #if (AMREX_SPACEDIM == 3)
                 fab(i,j,k,3) = 0.0;  // w velocity
-                fab(i,j,k,4) = 1.0;  // pressure
-                fab(i,j,k,5) = 1.0;  // temperature
+                fab(i,j,k,4) = 101325.0;  // pressure
+                fab(i,j,k,5) = 300.0;  // temperature
+                fab(i, j, k, 6) = 0.767;
+                fab(i, j, k, 7) = 0.233; //
 #else
-                fab(i,j,k,3) = 1.0;  // pressure
-                fab(i,j,k,4) = 1.0;  // temperature
+                fab(i,j,k,3) = 101325.0;  // pressure
+                fab(i,j,k,4) = 300.0;  // temperature
 #endif
             }
         }

@@ -26,7 +26,7 @@ int cns(int argc, char* argv[])
         amr_core_adv.Prims2Cons();
 
         // advance solution to final time
-        /* amr_core_adv.Evolve(); */
+        amr_core_adv.Evolve();
 
         // wallclock time
         auto end_total = amrex::second() - strt_total;

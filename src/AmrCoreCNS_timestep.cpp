@@ -39,7 +39,7 @@ AmrCoreCNS::ComputeTimeStep (Real time)
 
             const Box& bx = mfi.tilebox();
             reduce_op.eval(bx, reduce_data, [=]
-            AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> ReduceTuple
+            AMREX_GPU_DEVICE (int i, int j, int k)  -> ReduceTuple
             {
                 Real dt_loc = cns_computedt(i, j, k, pfab, dx, lpyro);
                 return {dt_loc};

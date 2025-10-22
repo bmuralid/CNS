@@ -5,6 +5,15 @@ build/
 dist/
 wheels/
 *.egg-info
-
+*/plt*
+compile_flags.txt
+.vscode
+.cache
+compile_commands.json
+*/tags
+tags
 # Virtual environments
 .venv
+uv.lock
+extern
+*/inputs

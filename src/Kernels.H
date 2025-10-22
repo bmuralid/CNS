@@ -4,6 +4,7 @@
 #include <AMReX_FArrayBox.H>
 #include "CNS_index_macros.H"
 #include "pyro.H"
+#include <AMReX_Print.H>
 
 /* #if (AMREX_SPACEDIM == 2) */
 /* #include <compute_flux_2D_K.H> */
@@ -34,7 +35,6 @@ cns_computedt(int i, int j, int k,
                   thermo.get_specific_gas_constant(species_massfractions) /
                   thermo.get_mixture_specific_heat_cv_mass(temperature, species_massfractions) *
                   temperature);
-
     Real dt_min = Real(1.0e10);
 #if (AMREX_SPACEDIM == 2)
     Real dt_x = dx[0] / (std::abs(ux) + c);

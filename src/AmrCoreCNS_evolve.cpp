@@ -28,7 +28,9 @@ AmrCoreCNS:: Evolve ()
     for(int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
         Real dt = ComputeTimeStep(cur_time);
-        Advance(cur_time, dt);
+        /* Advance(cur_time, dt); */
+        amrex::Print() << "After step " << step+1 << " at time " << cur_time+dt
+                           << " dt: " << dt << "\n";
 
         cur_time += dt;
 
