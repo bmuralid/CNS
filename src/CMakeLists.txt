@@ -2,8 +2,13 @@ set (SRCDIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set (CNS_OBJECTS
     ${SRCDIR}/initEB.cpp
-    ${SRCDIR}/cns.cpp
+    ${SRCDIR}/pyro.cpp
     ${SRCDIR}/AmrCoreCNS.cpp
+    ${SRCDIR}/AmrCoreCNS_evolve.cpp
+    ${SRCDIR}/AmrCoreCNS_advance.cpp
+    ${SRCDIR}/AmrCoreCNS_timestep.cpp
+    ${SRCDIR}/AmrCoreCNS_thermo.cpp
+    ${SRCDIR}/cns.cpp
     )
 
 set (OBJECTS_SERIAL  ${CNS_OBJECTS} CACHE INTERNAL "Objects for serial build")

@@ -23,6 +23,7 @@ int cns(int argc, char* argv[])
         auto max_level = amr_core_adv.maxLevel();
         initializeEB(amr_core_adv.Geom(0), 0 , 0);
         amr_core_adv.InitData();
+        amr_core_adv.Prims2Cons();
 
         // advance solution to final time
         /* amr_core_adv.Evolve(); */

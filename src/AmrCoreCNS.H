@@ -9,6 +9,7 @@
 #include <AMReX_FluxRegister.H>
 #include <AMReX_BCRec.H>
 #include <AMReX_EBFabFactory.H>
+#include <pyro.H>
 
 class AmrCoreCNS
     : public amrex::AmrCore
@@ -45,6 +46,13 @@ public:
     // overrides the pure virtual function in AmrCore
     virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
 
+    void Evolve ();
+
+    static pyro::pyro<double> thermo;
+    void Cons2Prims();
+
+    void Prims2Cons();
+
 private:
 
     void ReadParameters();
@@ -52,6 +60,10 @@ private:
     void AverageDown(int opt);
 
     void AverageDownTo (int crse_lev, int opt);
+
+    amrex::Real ComputeTimeStep (amrex::Real time);
+
+    void Advance (amrex::Real time, amrex::Real dt);
 
     void FillPatch (int lev, int opt, amrex::Real time, amrex::MultiFab& mf, int  icomp, int ncomp);
 
@@ -80,6 +92,11 @@ private:
     // read checkpoint file from disk
     void ReadCheckpointFile ();
 
+    void ComputeTimeStep ();
+
+    void TimeStep (amrex::Real time);
+
+
     // private data members
     amrex::Vector<int> istep;
     amrex::Vector<int> nsubsteps;
@@ -89,6 +106,7 @@ private:
     amrex::Vector<amrex::Real> dt;
 
     amrex::Vector<amrex::MultiFab> qcons_new;
+    amrex::Vector<amrex::MultiFab> qcons_tmp;
     amrex::Vector<amrex::MultiFab> qcons_old;
     amrex::Vector<amrex::MultiFab> qprims;
     amrex::Vector<amrex::MultiFab> phi;

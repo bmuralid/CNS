@@ -15,6 +15,10 @@
 
 #include <AmrCoreCNS.H>
 #include <Kernels.H>
+#include <Prob.H>
+#include <Thermo.H>
+#include <Tagging.H>
+#include <bc_fill.H>
 
 using namespace amrex;
 AmrCoreCNS::AmrCoreCNS ()
@@ -123,8 +127,8 @@ AmrCoreCNS::InitData ()
 void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
         const DistributionMapping& dm)
 {
-    const int ncomp_cons = 5; // [\rho, \rho u, \rho v, \rho w, E]^T
-    const int ncomp_prims = 6; // [\rho, u, v, w, P, T]
+    const int ncomp_cons = NCONS; // [\rho, \rho u, \rho v, \rho w, E]^T
+    const int ncomp_prims = NPRIM; // [\rho, u, v, w, P, T]
     const int nghost = 2;
 
     qcons_new[lev].define(ba, dm, ncomp_cons, nghost);
@@ -140,6 +144,7 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
     }
 
     MultiFab& state = qprims[lev];
+    MultiFab& cons  = qcons_new[lev];
 
     const auto problo = Geom(lev).ProbLoArray();
     const auto dx     = Geom(lev).CellSizeArray();
@@ -150,6 +155,7 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
     for (MFIter mfi(state,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
         Array4<Real> fab = state[mfi].array();
+        Array4<Real> cfab = cons[mfi].array();
         const Box& box = mfi.tilebox();
 
         amrex::launch(box,
@@ -158,6 +164,10 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
             initdata(tbx, fab, problo, dx);
         });
     }
+
+    // Call prims to cons to fill in qcons_new
+    /* Prims2Cons(); */
+
 
     // Initialize phi as signed distance to a sphere centered at (0,0,0) with radius 0.5
 #ifdef AMREX_USE_OMP
@@ -792,5 +802,3 @@ AmrCoreCNS::ReadCheckpointFile ()
                     amrex::MultiFabFileFullPrefix(lev, restart_chkfile, "Level_", "qcons_new"));
     }
 }
-
-
