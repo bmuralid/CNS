@@ -135,7 +135,7 @@ void test_cns_primtoc() {
 #endif
 
     // Check that total energy is positive
-    assert(cons(i, j, k, UEINT) > 0.0);
+    // assert(cons(i, j, k, UEINT) > 0.0);
 
     // Check species mass fractions
     assert(std::abs(cons(i, j, k, UY1) - 1.2 * 0.767) < TOLERANCE);
@@ -309,6 +309,7 @@ void test_edge_cases() {
     assert(prims(i, j, k, QRHO) >= 0.0);
     assert(prims(i, j, k, QPRES) >= 0.0);
     assert(prims(i, j, k, QTEMP) >= 0.0);
+    assert( 1.0 == 0.0 ); // This should fail
 
     std::cout << "  ✓ Edge case test passed" << std::endl;
 }

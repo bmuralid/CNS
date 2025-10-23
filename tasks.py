@@ -89,12 +89,12 @@ def load_env(c):
         print(f"No .env file found at {env_file}, skipping.")
 
 @invoke.task
-def config(c):
+def config(c, build_type:str="RelWithDebInfo"):
     """Run cmake configure."""
-    do_config(c)
+    do_config(c, build_type=build_type)
 
 
-def do_config(c):
+def do_config(c, build_type:str="RelWithDebInfo"):
     build_path = get_build_path()
     build_path.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -106,7 +106,7 @@ def do_config(c):
         str(SRC_PATH),
         "-B",
         str(build_path),
-        "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+        f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=1",
     ]
     c.run(" ".join(cmd), pty=True)
