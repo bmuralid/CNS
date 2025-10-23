@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(ENABLE_TESTING "Enable testing" ON)
 # Find AMREx library
 find_package(AMReX REQUIRED HINTS $ENV{AMREX_ROOT_DIR})
 
@@ -45,6 +46,12 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(exec)
+
+if(ENABLE_TESTING)
+    include(CTest)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 install(TARGETS ${EXEC_NAME} DESTINATION ${CMAKE_BINARY_DIR})
 install(TARGETS "cns" DESTINATION ${CMAKE_BINARY_DIR})
