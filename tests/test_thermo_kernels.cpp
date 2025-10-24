@@ -1,9 +1,11 @@
 #include <iostream>
-#include <cassert>
 #include <cmath>
 #include <array>
 #include <AMReX_Array4.H>
 #include <AMReX_FArrayBox.H>
+#include <AMReX.H>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_session.hpp>
 #include "pyro.H"
 #include "Thermo.H"
 #include "Kernels.H"
@@ -11,11 +13,28 @@
 
 // Test tolerance for floating point comparisons
 const double TOLERANCE = 1e-10;
+using namespace amrex;
+
+// AMReX setup and teardown fixtures
+struct AMReXFixture {
+    AMReXFixture() {
+        int argc=0;
+        char** argv = {nullptr};
+        amrex::Initialize(argc, argv);
+    }
+
+    ~AMReXFixture() {
+        amrex::Finalize();
+    }
+};
 
 // Test function for cns_ctoprim
-void test_cns_ctoprim() {
+TEST_CASE_METHOD(AMReXFixture, "cns_ctoprim", "[thermo]") {
     std::cout << "Testing cns_ctoprim..." << std::endl;
 
+    /* int argc=0; */
+    /* char** argv = {nullptr}; */
+    /* amrex::Initialize(argc, argv); */
     // Create test data
     const int i = 0, j = 0, k = 0;
     const int ncomp_cons = NCONS;
@@ -66,16 +85,16 @@ void test_cns_ctoprim() {
     cns_ctoprim(i, j, k, cons, prims, thermo);
 
     // Verify results
-    assert(std::abs(prims(i, j, k, QRHO) - 1.2) < TOLERANCE);
-    assert(std::abs(prims(i, j, k, QU) - 100.0) < TOLERANCE);
-    assert(std::abs(prims(i, j, k, QV) - 50.0) < TOLERANCE);
+    REQUIRE(std::abs(prims(i, j, k, QRHO) - 1.2) < TOLERANCE);
+    REQUIRE(std::abs(prims(i, j, k, QU) - 100.0) < TOLERANCE);
+    REQUIRE(std::abs(prims(i, j, k, QV) - 50.0) < TOLERANCE);
 #if (AMREX_SPACEDIM == 3)
-    assert(std::abs(prims(i, j, k, QW) - 25.0) < TOLERANCE);
+    REQUIRE(std::abs(prims(i, j, k, QW) - 25.0) < TOLERANCE);
 #endif
 
     // Check that pressure and temperature are positive
-    assert(prims(i, j, k, QPRES) > 0.0);
-    assert(prims(i, j, k, QTEMP) > 0.0);
+    REQUIRE(prims(i, j, k, QPRES) > 0.0);
+    REQUIRE(prims(i, j, k, QTEMP) > 0.0);
 
     std::cout << "  ✓ cns_ctoprim test passed" << std::endl;
     std::cout << "    Density: " << prims(i, j, k, QRHO) << std::endl;
@@ -86,10 +105,11 @@ void test_cns_ctoprim() {
 #endif
     std::cout << "    Pressure: " << prims(i, j, k, QPRES) << std::endl;
     std::cout << "    Temperature: " << prims(i, j, k, QTEMP) << std::endl;
+    /* amrex::Finalize(); */
 }
 
 // Test function for cns_primtoc
-void test_cns_primtoc() {
+TEST_CASE_METHOD(AMReXFixture, "cns_primtoc", "[thermo]") {
     std::cout << "Testing cns_primtoc..." << std::endl;
 
     // Create test data
@@ -127,19 +147,19 @@ void test_cns_primtoc() {
     cns_primtoc(i, j, k, prims, cons, thermo);
 
     // Verify results
-    assert(std::abs(cons(i, j, k, URHO) - 1.2) < TOLERANCE);
-    assert(std::abs(cons(i, j, k, UMX) - 1.2 * 100.0) < TOLERANCE);
-    assert(std::abs(cons(i, j, k, UMY) - 1.2 * 50.0) < TOLERANCE);
+    REQUIRE(std::abs(cons(i, j, k, URHO) - 1.2) < TOLERANCE);
+    REQUIRE(std::abs(cons(i, j, k, UMX) - 1.2 * 100.0) < TOLERANCE);
+    REQUIRE(std::abs(cons(i, j, k, UMY) - 1.2 * 50.0) < TOLERANCE);
 #if (AMREX_SPACEDIM == 3)
-    assert(std::abs(cons(i, j, k, UMZ) - 1.2 * 25.0) < TOLERANCE);
+    REQUIRE(std::abs(cons(i, j, k, UMZ) - 1.2 * 25.0) < TOLERANCE);
 #endif
 
     // Check that total energy is positive
-    // assert(cons(i, j, k, UEINT) > 0.0);
+    /* REQUIRE(cons(i, j, k, UEINT) > 0.0); */
 
     // Check species mass fractions
-    assert(std::abs(cons(i, j, k, UY1) - 1.2 * 0.767) < TOLERANCE);
-    assert(std::abs(cons(i, j, k, UY2) - 1.2 * 0.233) < TOLERANCE);
+    REQUIRE(std::abs(cons(i, j, k, UY1) - 1.2 * 0.767) < TOLERANCE);
+    REQUIRE(std::abs(cons(i, j, k, UY2) - 1.2 * 0.233) < TOLERANCE);
 
     std::cout << "  ✓ cns_primtoc test passed" << std::endl;
     std::cout << "    Density: " << cons(i, j, k, URHO) << std::endl;
@@ -154,7 +174,7 @@ void test_cns_primtoc() {
 }
 
 // Test function for cns_computedt
-void test_cns_computedt() {
+TEST_CASE_METHOD(AMReXFixture, "cns_computedt", "[thermo]") {
     std::cout << "Testing cns_computedt..." << std::endl;
 
     // Create test data
@@ -195,15 +215,15 @@ void test_cns_computedt() {
     amrex::Real dt = cns_computedt(i, j, k, prims, dx, thermo);
 
     // Verify results
-    assert(dt > 0.0);
-    assert(dt < 1.0e10);  // Should be less than the initial large value
+    REQUIRE(dt > 0.0);
+    REQUIRE(dt < 1.0e10);  // Should be less than the initial large value
 
     // The time step should be limited by the CFL condition
     // dt = dx / (|u| + c), where c is the speed of sound
     // For a reasonable speed of sound (~340 m/s for air),
     // dt should be approximately dx / (|u| + c)
     double expected_dt = dx[0] / (100.0 + 340.0);  // Rough estimate
-    assert(dt < expected_dt * 2.0);  // Allow some tolerance
+    REQUIRE(dt < expected_dt * 2.0);  // Allow some tolerance
 
     std::cout << "  ✓ cns_computedt test passed" << std::endl;
     std::cout << "    Computed dt: " << dt << std::endl;
@@ -211,7 +231,7 @@ void test_cns_computedt() {
 }
 
 // Round-trip test: cons -> prims -> cons
-void test_roundtrip() {
+TEST_CASE_METHOD(AMReXFixture, "roundtrip_conversion", "[thermo]") {
     std::cout << "Testing round-trip conversion (cons -> prims -> cons)..." << std::endl;
 
     // Create test data
@@ -255,15 +275,15 @@ void test_roundtrip() {
     // Compare original and converted conservative variables
     double tolerance = 1e-6;  // Allow some numerical error for round-trip
 
-    assert(std::abs(cons_original(i, j, k, URHO) - cons_converted(i, j, k, URHO)) < tolerance);
-    assert(std::abs(cons_original(i, j, k, UMX) - cons_converted(i, j, k, UMX)) < tolerance);
-    assert(std::abs(cons_original(i, j, k, UMY) - cons_converted(i, j, k, UMY)) < tolerance);
+    REQUIRE(std::abs(cons_original(i, j, k, URHO) - cons_converted(i, j, k, URHO)) < tolerance);
+    REQUIRE(std::abs(cons_original(i, j, k, UMX) - cons_converted(i, j, k, UMX)) < tolerance);
+    REQUIRE(std::abs(cons_original(i, j, k, UMY) - cons_converted(i, j, k, UMY)) < tolerance);
 #if (AMREX_SPACEDIM == 3)
-    assert(std::abs(cons_original(i, j, k, UMZ) - cons_converted(i, j, k, UMZ)) < tolerance);
+    REQUIRE(std::abs(cons_original(i, j, k, UMZ) - cons_converted(i, j, k, UMZ)) < tolerance);
 #endif
-    assert(std::abs(cons_original(i, j, k, UEINT) - cons_converted(i, j, k, UEINT)) < tolerance);
-    assert(std::abs(cons_original(i, j, k, UY1) - cons_converted(i, j, k, UY1)) < tolerance);
-    assert(std::abs(cons_original(i, j, k, UY2) - cons_converted(i, j, k, UY2)) < tolerance);
+    REQUIRE(std::abs(cons_original(i, j, k, UEINT) - cons_converted(i, j, k, UEINT)) < tolerance);
+    REQUIRE(std::abs(cons_original(i, j, k, UY1) - cons_converted(i, j, k, UY1)) < tolerance);
+    REQUIRE(std::abs(cons_original(i, j, k, UY2) - cons_converted(i, j, k, UY2)) < tolerance);
 
     std::cout << "  ✓ Round-trip test passed" << std::endl;
     std::cout << "    Original density: " << cons_original(i, j, k, URHO) << std::endl;
@@ -272,7 +292,7 @@ void test_roundtrip() {
 }
 
 // Test edge cases
-void test_edge_cases() {
+TEST_CASE_METHOD(AMReXFixture, "edge_cases", "[thermo]") {
     std::cout << "Testing edge cases..." << std::endl;
 
     // Test with very small density
@@ -306,46 +326,33 @@ void test_edge_cases() {
     cns_ctoprim(i, j, k, cons, prims, thermo);
 
     // Check that the function doesn't crash and produces reasonable results
-    assert(prims(i, j, k, QRHO) >= 0.0);
-    assert(prims(i, j, k, QPRES) >= 0.0);
-    assert(prims(i, j, k, QTEMP) >= 0.0);
-    assert( 1.0 == 0.0 ); // This should fail
+    REQUIRE(prims(i, j, k, QRHO) >= 0.0);
+    REQUIRE(prims(i, j, k, QPRES) >= 0.0);
+    REQUIRE(prims(i, j, k, QTEMP) >= 0.0);
 
     std::cout << "  ✓ Edge case test passed" << std::endl;
 }
 
-int main(int argc, char* argv[]) {
-    std::cout << "Starting CNS thermo kernels tests..." << std::endl;
-    std::cout << "AMREX_SPACEDIM = " << AMREX_SPACEDIM << std::endl;
-    std::cout << "NCONS = " << NCONS << std::endl;
-    std::cout << "NPRIM = " << NPRIM << std::endl;
-    std::cout << "NSP = " << NSP << std::endl;
-    std::cout << std::endl;
-    amrex::Initialize(argc, argv);
+// Global setup and teardown for AMReX
+struct AMReXGlobalSetup {
+    AMReXGlobalSetup() {
+        // std::cout << "Global AMReX setup..." << std::endl;
+        // std::cout << "AMREX_SPACEDIM = " << AMREX_SPACEDIM << std::endl;
+        // std::cout << "NCONS = " << NCONS << std::endl;
+        // std::cout << "NPRIM = " << NPRIM << std::endl;
+        // std::cout << "NSP = " << NSP << std::endl;
+        // std::cout << std::endl;
+        /* int argc=0; */
+        /* char** argv = {nullptr}; */
+        /* amrex::Initialize(argc, argv); */
 
-    try {
-        test_cns_ctoprim();
-        std::cout << std::endl;
-
-        test_cns_primtoc();
-        std::cout << std::endl;
-
-        test_cns_computedt();
-        std::cout << std::endl;
-
-        test_roundtrip();
-        std::cout << std::endl;
-
-        test_edge_cases();
-        std::cout << std::endl;
-
-        std::cout << "All tests passed successfully!" << std::endl;
-        return 0;
-    } catch (const std::exception& e) {
-        std::cerr << "Test failed with exception: " << e.what() << std::endl;
-        return 1;
-    } catch (...) {
-        std::cerr << "Test failed with unknown exception" << std::endl;
-        return 1;
     }
-}
+
+    ~AMReXGlobalSetup() {
+        // std::cout << "Global AMReX teardown..." << std::endl;
+        /* amrex::Finalize(); */
+    }
+};
+
+// Global instance for setup/teardown
+AMReXGlobalSetup global_setup;

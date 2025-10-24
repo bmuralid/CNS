@@ -68,25 +68,28 @@ def info(c, topic="all"):
 @invoke.task
 def load_module(c):
     """ Load necessary modules."""
-    cmd = [
-        "source",
-        ".env",
+    module_list = [
+        "mpi/latest"
     ]
-    c.run(" ".join(cmd), pty=True)
+    for mod in module_list:
+        print(f"module load {mod}")
+
 
 @invoke.task
 def load_env(c):
     """Load environment variables from .env file if it exists."""
     env_file = SRC_PATH / ".env"
     if env_file.exists():
-        print(f"Loading environment variables from {env_file}")
+        # print(f"# Loading environment variables from {env_file}")
         with env_file.open("r") as f:
             for line in f:
                 if line.strip() and not line.startswith("#"):
                     key, value = line.strip().split("=", 1)
+                    # Output in shell export format
+                    print(f"export {key}={value}")
                     os.environ[key] = value
     else:
-        print(f"No .env file found at {env_file}, skipping.")
+        print(f"# No .env file found at {env_file}, skipping.")
 
 @invoke.task
 def config(c, build_type:str="RelWithDebInfo"):
@@ -152,11 +155,11 @@ def install(c):
 @invoke.task
 def clean(c):
     """Clean build directory."""
-    # Don't clean during CppCon and the week before/after
-    _, week, _ = datetime.now().isocalendar()
-    if week in (36, 37, 38):
-        print(f"I'm sorry I can't do that Dave as the current week is {week}.")
-        return
+    # # Don't clean during CppCon and the week before/after
+    # _, week, _ = datetime.now().isocalendar()
+    # if week in (36, 37, 38):
+    #     print(f"I'm sorry I can't do that Dave as the current week is {week}.")
+    #     return
 
     build_path = get_build_path()
     if build_path.exists():
@@ -201,5 +204,26 @@ def ctags(c):
         "-f",
         "tags",
         ".",
+    ]
+    c.run(" ".join(cmd), pty=True)
+
+@invoke.task
+def test(c):
+    """Run tests via ctest."""
+    build_path = get_build_path()
+
+    if not build_path.exists():
+        print("Error: build path doesn't exist.")
+        return
+
+    cmd = [
+        "cd",
+        f"{build_path} &&" ,
+        "ctest",
+        "--output-on-failure",
+        "-C",
+        "RelWithDebInfo",
+        "-j",
+        "4",
     ]
     c.run(" ".join(cmd), pty=True)
