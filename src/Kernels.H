@@ -50,6 +50,23 @@ cns_computedt(int i, int j, int k,
     return dt_min;
 }
 
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+amrex::Real
+monocent(amrex::Real a, amrex::Real b, amrex::Real c) noexcept
+{
+    using amrex::Real;
+
+    if ( a > Real(0.0) && b > Real(0.0) && c > Real(0.0) ) {
+        return amrex::min( amrex::min(a, b), c );
+    } else if ( a < Real(0.0) && b < Real(0.0) && c < Real(0.0) ) {
+        return amrex::max( amrex::max(a, b), c );
+    } else {
+        return Real(0.0);
+    }
+}
+
+
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void
 derivative(int i, int j, int k,
@@ -59,6 +76,23 @@ derivative(int i, int j, int k,
         amrex::Real dx) noexcept
 {
     using amrex::Real;
+
+    Real inv_2dx = Real(0.5) / dx;
+    Real inv_dx = Real(1.0) / dx;
+    Real delta_plus = Real(0.0);
+    Real delta_central = Real(0.0);
+    Real delta_minus = Real(0.0);
+
+    const int i1 = idir== 0 ? 1 : 0;
+    const int j1 = idir== 1 ? 1 : 0;
+    const int k1 = idir== 2 ? 1 : 0;
+
+    for (int icomp = 0; icomp < NPRIM; ++icomp){
+        delta_minus = (prims(i, j, k, icomp) - prims(i-i1, j-j1, k-k1, icomp)) * inv_dx;
+        delta_central = (prims(i+i1, j+j1, k+k1) - prims(i-i1, j-j1, k-k1, icomp)) * inv_2dx;
+        delta_plus = (prims(i+i1, j+j1, k+k1, icomp) - prims(i-i1, j-j1, k-k1, icomp)) * inv_dx;
+        deriv(i, j, k, icomp) = monocent(delta_minus, delta_central, delta_plus);
+    }
 }
 
 
