@@ -8,14 +8,14 @@
 using namespace amrex;
 
 void
-AmrCoreCNS::Cons2Prims ()
+AmrCoreCNS::Cons2Prims (int opt)
 {
     /* Compute conservatives to primitives */
     pyro::pyro<double> const lpyro  = thermo;
 
     for (int lev = 0; lev <= finest_level; lev++) {
         MultiFab& mfprims =  qprims[lev];
-        MultiFab& mfcons = qcons_new[lev];
+        MultiFab& mfcons = opt == 1 ? qcons_old[lev] : qcons_new[lev];
 
         for (MFIter mfi(mfcons, TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {

@@ -49,7 +49,7 @@ public:
     void Evolve ();
 
     static pyro::pyro<double> thermo;
-    void Cons2Prims();
+    void Cons2Prims(int opt);
 
     void Prims2Cons();
 
@@ -64,6 +64,8 @@ private:
     amrex::Real ComputeTimeStep (amrex::Real time);
 
     void Advance (amrex::Real time, amrex::Real dt);
+
+    void AdvanceSingleStage (amrex::Real time, amrex::Real dt);
 
     void FillPatch (int lev, int opt, amrex::Real time, amrex::MultiFab& mf, int  icomp, int ncomp);
 

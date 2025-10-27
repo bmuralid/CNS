@@ -49,4 +49,66 @@ cns_computedt(int i, int j, int k,
 #endif
     return dt_min;
 }
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+void
+derivative(int i, int j, int k,
+        int idir,
+        amrex::Array4<amrex::Real> const& prims,
+        amrex::Array4<amrex::Real> const& deriv,
+        amrex::Real dx) noexcept
+{
+    using amrex::Real;
+}
+
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+void
+flux_recon_x(int i, int j, int k,
+        amrex::Array4<amrex::Real> const& fluxx,
+        amrex::Array4<amrex::Real> const& prims,
+        amrex::Array4<amrex::Real> const& deriv,
+        amrex::Real dt) noexcept
+{
+    using amrex::Real;
+
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+void
+flux_recon_y(int i, int j, int k,
+        amrex::Array4<amrex::Real> const& fluxy,
+        amrex::Array4<amrex::Real> const& prims,
+        amrex::Array4<amrex::Real> const& deriv,
+        amrex::Real dt) noexcept
+{
+    using amrex::Real;
+
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+void
+flux_recon_z(int i, int j, int k,
+        amrex::Array4<amrex::Real> const& fluxz,
+        amrex::Array4<amrex::Real> const& prims,
+        amrex::Array4<amrex::Real> const& deriv,
+        amrex::Real dt) noexcept
+{
+    using amrex::Real;
+
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+void
+computedq(int i, int j, int k,
+        amrex::Array4<amrex::Real> const& fluxx,
+        amrex::Array4<amrex::Real> const& fluxy,
+        amrex::Array4<amrex::Real> const& fluxz,
+        amrex::Array4<amrex::Real> const& dq,
+        amrex::Real dt) noexcept
+{
+    using amrex::Real;
+
+}
+
 #endif

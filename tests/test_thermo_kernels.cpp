@@ -32,9 +32,6 @@ struct AMReXFixture {
 TEST_CASE_METHOD(AMReXFixture, "cns_ctoprim", "[thermo]") {
     std::cout << "Testing cns_ctoprim..." << std::endl;
 
-    /* int argc=0; */
-    /* char** argv = {nullptr}; */
-    /* amrex::Initialize(argc, argv); */
     // Create test data
     const int i = 0, j = 0, k = 0;
     const int ncomp_cons = NCONS;
@@ -105,7 +102,6 @@ TEST_CASE_METHOD(AMReXFixture, "cns_ctoprim", "[thermo]") {
 #endif
     std::cout << "    Pressure: " << prims(i, j, k, QPRES) << std::endl;
     std::cout << "    Temperature: " << prims(i, j, k, QTEMP) << std::endl;
-    /* amrex::Finalize(); */
 }
 
 // Test function for cns_primtoc
