@@ -72,7 +72,7 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
-                   derivative(i, j, k, idir, pfab, dfab, dx[idir]);
+                   derivative(i, j, k, idir, 1, pfab, dfab, dx[idir]);
                 });
 
                 amrex::ParallelFor(fbx.grow(Direction::x, -1).surroundingNodes(Direction::x),
@@ -87,7 +87,7 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
-                   derivative(i, j, k, idir, pfab, dfab, dx[idir]);
+                   derivative(i, j, k, idir, 1, pfab, dfab, dx[idir]);
                 });
 
                 amrex::ParallelFor(fbx.grow(Direction::y, -1).surroundingNodes(Direction::y),
@@ -102,7 +102,7 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
-                   derivative(i, j, k, idir, pfab, dfab, dx[idir]);
+                   derivative(i, j, k, idir, 1, pfab, dfab, dx[idir]);
                 });
 
                 amrex::ParallelFor(fbx.grow(Direction::z, -1).surroundingNodes(Direction::z),

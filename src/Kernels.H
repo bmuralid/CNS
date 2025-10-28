@@ -71,6 +71,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void
 derivative(int i, int j, int k,
         int idir,
+        int isLimited,
         amrex::Array4<amrex::Real> const& prims,
         amrex::Array4<amrex::Real> const& deriv,
         amrex::Real dx) noexcept
@@ -89,9 +90,9 @@ derivative(int i, int j, int k,
 
     for (int icomp = 0; icomp < NPRIM; ++icomp){
         delta_minus = (prims(i, j, k, icomp) - prims(i-i1, j-j1, k-k1, icomp)) * inv_dx;
-        delta_central = (prims(i+i1, j+j1, k+k1) - prims(i-i1, j-j1, k-k1, icomp)) * inv_2dx;
-        delta_plus = (prims(i+i1, j+j1, k+k1, icomp) - prims(i-i1, j-j1, k-k1, icomp)) * inv_dx;
-        deriv(i, j, k, icomp) = monocent(delta_minus, delta_central, delta_plus);
+        delta_central = (prims(i+i1, j+j1, k+k1, icomp) - prims(i-i1, j-j1, k-k1, icomp)) * inv_2dx;
+        delta_plus = (prims(i+i1, j+j1, k+k1, icomp) - prims(i, j, k, icomp)) * inv_dx;
+        deriv(i, j, k, icomp) = isLimited == 1 ? monocent(delta_minus, delta_central, delta_plus) : delta_central;
     }
 }
 
