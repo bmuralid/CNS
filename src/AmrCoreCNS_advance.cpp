@@ -25,6 +25,7 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
 
 {
     Vector< Array <MultiFab, AMREX_SPACEDIM>> fluxes(finest_level + 1);
+    pyro::pyro<double> const lpyro = thermo;
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
@@ -67,8 +68,7 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                              Array4<Real> fluxz = fluxes[lev][2].array(mfi));
 
                 // Flux reconstruction in X-direction
-                int idir;
-                idir = 0;
+                int idir = 0;
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
@@ -78,7 +78,8 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                 amrex::ParallelFor(fbx.grow(Direction::x, -1).surroundingNodes(Direction::x),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
-                    flux_recon_x(i, j, k, fluxx, pfab, dfab, dt);
+
+                    flux_recon(i, j, k, fluxx, pfab, dfab, idir, lpyro, dt, dx[idir]);
 
                 });
 
@@ -93,7 +94,7 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                 amrex::ParallelFor(fbx.grow(Direction::y, -1).surroundingNodes(Direction::y),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
-                    flux_recon_y(i, j, k, fluxy, pfab, dfab, dt);
+                    flux_recon(i, j, k, fluxy, pfab, dfab, idir, lpyro, dt, dx[idir]);
 
                 });
 
@@ -108,7 +109,8 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                 amrex::ParallelFor(fbx.grow(Direction::z, -1).surroundingNodes(Direction::z),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
-                    flux_recon_z(i, j, k, fluxz, pfab, dfab, dt);
+                    flux_recon(i, j, k, fluxz, pfab, dfab, idir, lpyro, dt, dx[idir]);
+                    // flux_recon_z(i, j, k, fluxz, pfab, dfab, lpyro, dt);
 
                 });
             }

@@ -80,4 +80,40 @@ cns_primtoc (int i, int j, int k,
         cons(i, j, k, UEINT + 1 + n) = rho * species_massfractions[n];
     }
 }
+
+AMREX_GPU_HOST_DEVICE
+AMREX_FORCE_INLINE
+void
+primtoc (amrex::GpuArray<amrex::Real, NPRIM> const& prims,
+        amrex::GpuArray<amrex::Real, NCONS> & cons,
+        pyro::pyro<double> const& thermo)
+{
+    using amrex::Real;
+
+    Real rho = prims[QRHO];
+    Real ux = prims[QU];
+    Real uy = prims[QV];
+    Real uz = prims[QW];
+    Real pressure = prims[QPRES];
+    Real temperature = prims[QTEMP];
+
+    Real kineng = Real(0.5) * rho * (ux*ux + uy*uy + uz*uz);
+    std::array<double, NSP> species_massfractions = {0.767, 0.233}; // default values
+    for (int n = 0; n < thermo.num_species; ++n) {
+        species_massfractions[n] = prims[QTEMP + 1 + n];
+    }
+
+    Real ei = thermo.get_mixture_internal_energy_mass(temperature, species_massfractions);
+    Real eint = ei * rho;
+    Real total_energy = eint + kineng;
+    cons[URHO] = rho;
+    cons[UMX]  = rho * ux;
+    cons[UMY]  = rho * uy;
+    cons[UMZ]  = rho * uz;
+    cons[UEINT] = total_energy;
+    for (int n = 0; n < thermo.num_species; ++n) {
+        cons[UEINT + 1 + n] = rho * species_massfractions[n];
+    }
+}
+
 #endif

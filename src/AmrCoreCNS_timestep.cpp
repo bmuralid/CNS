@@ -31,7 +31,6 @@ AmrCoreCNS::ComputeTimeStep (Real time)
 
     for (int lev = 0; lev <= finest_level; lev++) {
         MultiFab& mfprims =  qprims[lev];
-
         const auto dx = Geom(lev).CellSizeArray();
         for (MFIter mfi(mfprims, TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {

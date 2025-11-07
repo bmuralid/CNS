@@ -5,7 +5,7 @@
 #include "CNS_index_macros.H"
 #include "pyro.H"
 #include <AMReX_Print.H>
-
+#include "Thermo.H"
 /* #if (AMREX_SPACEDIM == 2) */
 /* #include <compute_flux_2D_K.H> */
 /* #else */
@@ -99,14 +99,113 @@ derivative(int i, int j, int k,
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void
-flux_recon_x(int i, int j, int k,
-        amrex::Array4<amrex::Real> const& fluxx,
-        amrex::Array4<amrex::Real> const& prims,
-        amrex::Array4<amrex::Real> const& deriv,
-        amrex::Real dt) noexcept
+compute_riemann_flux(
+        amrex::GpuArray<amrex::Real, NPRIM> const&  uleft,
+        amrex::GpuArray<amrex::Real, NPRIM> const&  uright,
+        const int idir,
+        amrex::GpuArray<amrex::Real, NCONS> & flux,
+        pyro::pyro<double> const& thermo) noexcept
 {
     using amrex::Real;
 
+    amrex::GpuArray<Real, NCONS> qleft, qright;
+    // primtoc(uleft, qleft, thermo);
+    // primtoc(uright, qright, thermo);
+
+      /* call sos(ul, cl) */
+      /* call sos(ur, cr) */
+
+      /* if (idir == 1) then */
+      /*    fl(1) = ul(irho)*ul(iu) */
+      /*    fl(2) = ul(irho)*ul(iu)*ul(iu) + ul(ip) */
+      /*    fl(3) = ul(irho)*ul(iu)*ul(iv) */
+      /*    fl(4) = ul(iu)*(ql(iRhoE) + ul(ip)) */
+
+      /*    fr(1) = ur(irho)*ur(iu) */
+      /*    fr(2) = ur(irho)*ur(iu)*ur(iu) + ur(ip) */
+      /*    fr(3) = ur(irho)*ur(iu)*ur(iv) */
+      /*    fr(4) = ur(iu)*(qr(iRhoE) + ur(ip)) */
+      /* else */
+      /*    fl(1) = ul(irho)*ul(iv) */
+      /*    fl(2) = ul(irho)*ul(iu)*ul(iv) */
+      /*    fl(3) = ul(irho)*ul(iv)*ul(iv) + ul(ip) */
+      /*    fl(4) = ul(iv)*(ql(iRhoE) + ul(ip)) */
+
+      /*    fr(1) = ur(irho)*ur(iv) */
+      /*    fr(2) = ur(irho)*ur(iu)*ur(iv) */
+      /*    fr(3) = ur(irho)*ur(iv)*ur(iv) + ur(ip) */
+      /*    fr(4) = ur(iv)*(qr(iRhoE) + ur(ip)) */
+      /* end if */
+
+      /* a1 = max(ul(irho + idir) + cl, ur(irho + idir) + cr, 0.0d0) */
+      /* a2 = min(ul(irho + idir) - cl, ur(irho + idir) - cr, 0.0d0) */
+
+      /* do l = 1, ncons */
+      /*    f(l) = (a1*fl(l) - a2*fr(l) + a1*a2*(qr(l) - ql(l)))/(a1 - a2) */
+      /* end do */
+
+    /* Use the above Fortan code as reference to implement the Riemann solver */
+    Real cl = Real(0.0); // Speed of sound on the left state
+    Real cr = Real(0.0); // Speed of sound on the right state
+    amrex::GpuArray<Real, NSP> species_massfractions = {0.0};
+    for (int n = 0; n < thermo.num_species; ++n) {
+        species_massfractions[n] = uleft[QTEMP + 1 + n];
+    }
+    Real temperature_left = uleft[QTEMP];
+    // cl = sqrt(thermo.get_mixture_specific_heat_cp_mass(temperature_left, species_massfractions) *
+    //           thermo.get_specific_gas_constant(species_massfractions) /
+    //           thermo.get_mixture_specific_heat_cv_mass(temperature_left, species_massfractions) *
+    //             temperature_left);
+    // for (int n = 0; n < thermo.num_species; ++n) {
+    //     species_massfractions[n] = uright[QTEMP + 1 + n];
+    // }
+    // Real temperature_right = uright[QTEMP];
+    // cr = sqrt(thermo.get_mixture_specific_heat_cp_mass(temperature_right, species_massfractions) *
+    //           thermo.get_specific_gas_constant(species_massfractions) /
+    //           thermo.get_mixture_specific_heat_cv_mass(temperature_right, species_massfractions) *
+    //             temperature_right);
+
+
+    // Convert left and right primitive states to conservative states
+
+
+    // Placeholder for Riemann solver implementation
+    // This function should compute the flux based on the left and right states
+    // For now, we set flux to zero
+    for(int icomp = 0; icomp < NCONS; ++icomp){
+        flux[icomp] = Real(0.0);
+    }
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+void
+flux_recon(int i, int j, int k,
+        amrex::Array4<amrex::Real> const& fluxx,
+        amrex::Array4<amrex::Real> const& prims,
+        amrex::Array4<amrex::Real> const& deriv,
+        const int idir,
+        pyro::pyro<double> const& thermo,
+        amrex::Real dt, amrex::Real dx) noexcept
+{
+    using amrex::Real;
+    amrex::GpuArray<Real, NPRIM> uleft, uright;
+    amrex::GpuArray<Real, NCONS> flux;
+
+    const int i1 = idir== 0 ? 1 : 0;
+    const int j1 = idir== 1 ? 1 : 0;
+    const int k1 = idir== 2 ? 1 : 0;
+    // Perform reconstruction of the left and right states using the derivative information
+    for(int icomp = 0; icomp < NPRIM; ++icomp){
+        uleft[icomp]  = prims(i-i1, j-j1, k-k1, icomp) + Real(0.5) * deriv(i-i1, j-j1, k-k1, icomp) * dx;
+        uright[icomp] = prims(i, j, k, icomp) - Real(0.5) * deriv(i, j, k, icomp) * dx;
+    }
+
+    compute_riemann_flux(uleft, uright, idir, flux, thermo);
+
+    // Store the computed fluxes
+    for(int icomp = 0; icomp < NCONS; ++icomp){
+        fluxx(i, j, k, icomp) = flux[icomp];
+    }
 }
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
@@ -115,6 +214,11 @@ flux_recon_y(int i, int j, int k,
         amrex::Array4<amrex::Real> const& fluxy,
         amrex::Array4<amrex::Real> const& prims,
         amrex::Array4<amrex::Real> const& deriv,
+        amrex::GpuArray<amrex::Real, NPRIM> const&  uleft,
+        amrex::GpuArray<amrex::Real, NPRIM> const&  uright,
+        amrex::GpuArray<amrex::Real, NCONS> const&  qleft,
+        amrex::GpuArray<amrex::Real, NCONS> const&  qright,
+        pyro::pyro<double> const& thermo,
         amrex::Real dt) noexcept
 {
     using amrex::Real;
@@ -127,6 +231,11 @@ flux_recon_z(int i, int j, int k,
         amrex::Array4<amrex::Real> const& fluxz,
         amrex::Array4<amrex::Real> const& prims,
         amrex::Array4<amrex::Real> const& deriv,
+        amrex::GpuArray<amrex::Real, NPRIM> const&  uleft,
+        amrex::GpuArray<amrex::Real, NPRIM> const&  uright,
+        amrex::GpuArray<amrex::Real, NCONS> const&  qleft,
+        amrex::GpuArray<amrex::Real, NCONS> const&  qright,
+        pyro::pyro<double> const& thermo,
         amrex::Real dt) noexcept
 {
     using amrex::Real;
