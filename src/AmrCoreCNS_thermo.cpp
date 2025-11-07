@@ -15,7 +15,7 @@ AmrCoreCNS::Cons2Prims (int opt)
 
     for (int lev = 0; lev <= finest_level; lev++) {
         MultiFab& mfprims =  qprims[lev];
-        MultiFab& mfcons = opt == 1 ? qcons_old[lev] : qcons_new[lev];
+        MultiFab& mfcons = opt == 0 ? qcons_old[lev] : qcons_new[lev];
 
         for (MFIter mfi(mfcons, TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {

@@ -28,7 +28,7 @@ AmrCoreCNS:: Evolve ()
     for(int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
     {
         Real dt = ComputeTimeStep(cur_time);
-        /* Advance(cur_time, dt); */
+        Advance(cur_time, dt);
         amrex::Print() << "After step " << step+1 << " at time " << cur_time+dt
                            << " dt: " << dt << "\n";
 
@@ -53,7 +53,9 @@ AmrCoreCNS:: Evolve ()
         if (chk_int > 0 && (step+1)% chk_int == 0) {
             WriteCheckpointFile();
         }
-
+        istep[0] += 1;
     }
+    // Final plotfile
+    WritePlotFile();
 }
 

@@ -20,8 +20,12 @@
 #include <CNS_index_macros.H>
 using namespace amrex;
 
+/* time integration constants used `updatedq` */
+const std::array<amrex::Real, 2> const1 = {1.0, 0.5};
+const std::array<amrex::Real, 2> const2 = {0.0, 1.0};
+
 void
-AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
+AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
 
 {
     Vector< Array <MultiFab, AMREX_SPACEDIM>> fluxes(finest_level + 1);
@@ -29,11 +33,11 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        for (int idim = 0; idim <= AMREX_SPACEDIM; ++idim)
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
         {
             BoxArray ba = grids[lev];
             ba.surroundingNodes(idim);
-            fluxes[lev][idim] = MultiFab(ba, dmap[lev], 1, 0);
+            fluxes[lev][idim] = MultiFab(ba, dmap[lev], NCONS, 0);
         }
     }
 
@@ -110,7 +114,6 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
                     flux_recon(i, j, k, fluxz, pfab, dfab, idir, lpyro, dt, dx[idir]);
-                    // flux_recon_z(i, j, k, fluxz, pfab, dfab, lpyro, dt);
 
                 });
             }
@@ -131,7 +134,9 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
     /*----------------------------------------------------------------------*/
     for (int lev = 0; lev <= finest_level; lev++)
     {
-        MultiFab& mfcons = dq[lev];
+        MultiFab& mfdq = dq[lev];
+        MultiFab& mfold = qcons_old[lev];
+        MultiFab& mfnew = qcons_new[lev];
         const auto dx = geom[lev].CellSizeArray();
         AMREX_D_TERM(Real dtdx = dt/dx[0];,
                      Real dtdy = dt/dx[1];,
@@ -143,7 +148,9 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
             FArrayBox tmpfab;
             for (MFIter mfi(qprims[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
-                Array4<Real> dqfab = mfcons[mfi].array();
+                Array4<Real> dqfab = mfdq[mfi].array();
+                Array4<Real> qnew = mfnew[mfi].array();
+                Array4<Real> qold = mfold[mfi].array();
                 const Box& bx = mfi.tilebox();
                 Box fbx = mfi.tilebox();
                 AMREX_D_TERM(Array4<Real> fluxx = fluxes[lev][0].array(mfi);,
@@ -152,9 +159,10 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
-                   computedq(i, j, k, fluxx, fluxy, fluxz, dqfab, dt);
-                });
+                   computedq(i, j, k, fluxx, fluxy, fluxz, dqfab, dx, dt);
+                   updatedq(i, j, k, qnew, qold, dqfab, const1[istage], const2[istage]);
 
+                });
             }
         }
     }
@@ -165,11 +173,17 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt)
 void
 AmrCoreCNS::Advance (Real time, Real dt)
 {
-    /* Compute conservatives to primitives */
-    // Use Q_old for conervative to primitive
-    Cons2Prims(1);
 
-    AdvanceSingleStage(time, dt);
+    for (int lev=0; lev <= finest_level; lev++){
+        std::swap(qcons_old[lev], qcons_new[lev]);
+    }
+
+    for (int istage=0; istage<1; istage++){
+        // Need to call BC function here for primitives
+        AdvanceSingleStage(time, dt, istage);
+        AverageDown(1);
+        Cons2Prims(1);
+    }
 
     /* to compute the fluxes with refluxing */
 /*     for (int lev = 0; lev <= finest_level; lev++) { */

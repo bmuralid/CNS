@@ -65,7 +65,7 @@ private:
 
     void Advance (amrex::Real time, amrex::Real dt);
 
-    void AdvanceSingleStage (amrex::Real time, amrex::Real dt);
+    void AdvanceSingleStage (amrex::Real time, amrex::Real dt, int istage);
 
     void FillPatch (int lev, int opt, amrex::Real time, amrex::MultiFab& mf, int  icomp, int ncomp);
 

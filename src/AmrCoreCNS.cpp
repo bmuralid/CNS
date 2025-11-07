@@ -166,7 +166,7 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
     }
 
     // Call prims to cons to fill in qcons_new
-    /* Prims2Cons(); */
+    Prims2Cons();
 
 
     // Initialize phi as signed distance to a sphere centered at (0,0,0) with radius 0.5
