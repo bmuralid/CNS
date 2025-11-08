@@ -3,7 +3,7 @@
 
 #include <AMReX_Array4.H>
 
-AMREX_GPU_HOST_DEVICE
+AMREX_GPU_DEVICE
 AMREX_FORCE_INLINE
 void
 state_error (int i, int j, int k,

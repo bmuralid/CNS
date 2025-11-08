@@ -4,7 +4,7 @@
 #include <AMReX_Array4.H>
 #include <pyro.H>
 
-AMREX_GPU_HOST_DEVICE
+AMREX_GPU_DEVICE
 AMREX_FORCE_INLINE
 void
 cns_deri (int i, int j, int k,
@@ -20,8 +20,3 @@ cns_deri (int i, int j, int k,
 
 
 }
-
-
-
-
-
