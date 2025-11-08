@@ -47,15 +47,17 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
         MultiFab& mfprims =  qprims[lev];
         MultiFab& mfcons = qcons_new[lev];
         const auto dx = geom[lev].CellSizeArray();
+        const amrex::Array<Real, 3> dx_local = {dx[0], dx[1], dx[2]};
         AMREX_D_TERM(Real dtdx = dt/dx[0];,
                      Real dtdy = dt/dx[1];,
                      Real dtdz = dt/dx[2]);
+        // amrex::Print() << qprims[lev].boxArray() <<"\n";
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
         {
             FArrayBox tmpfab;
-            for (MFIter mfi(qprims[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            for (MFIter mfi(qprims[lev], false); mfi.isValid(); ++mfi)
             {
                 Array4<Real> cfab = mfcons[mfi].array();
                 Array4<Real> pfab = mfprims[mfi].array();
@@ -76,10 +78,12 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
-                   derivative(i, j, k, idir, 1, pfab, dfab, dx[idir]);
+                   derivative(i, j, k, idir, 1, pfab, dfab, dx_local[idir]);
                 });
 
-                amrex::ParallelFor(fbx.grow(Direction::x, -1).surroundingNodes(Direction::x),
+                // amrex::ParallelFor(fbx.grow(Direction::x, -1).surroundingNodes(Direction::x),
+                //
+                amrex::ParallelFor(amrex::surroundingNodes(fbx, Direction::x),                // amrex::ParallelFor(fbx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
 
@@ -89,13 +93,18 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
 
                 // Flux reconstruction in Y-direction
                 idir = 1;
+
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
                    derivative(i, j, k, idir, 1, pfab, dfab, dx[idir]);
                 });
 
-                amrex::ParallelFor(fbx.grow(Direction::y, -1).surroundingNodes(Direction::y),
+                // amrex::Print()<<fluxy <<fbx.surroundingNodes(Direction::y) <<"\n";
+
+                amrex::ParallelFor(amrex::surroundingNodes(fbx, Direction::y),                // amrex::ParallelFor(fbx,
+                // amrex::ParallelFor(fbx.surroundingNodes(Direction::y),
+                // amrex::ParallelFor(fbx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
                     flux_recon(i, j, k, fluxy, pfab, dfab, idir, lpyro, dt, dx[idir]);
@@ -110,7 +119,9 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
                    derivative(i, j, k, idir, 1, pfab, dfab, dx[idir]);
                 });
 
-                amrex::ParallelFor(fbx.grow(Direction::z, -1).surroundingNodes(Direction::z),
+                amrex::ParallelFor(amrex::surroundingNodes(fbx, Direction::z),                // amrex::ParallelFor(fbx,
+                // amrex::ParallelFor(fbx.surroundingNodes(Direction::z),
+                // amrex::ParallelFor(fbx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k)
                 {
                     flux_recon(i, j, k, fluxz, pfab, dfab, idir, lpyro, dt, dx[idir]);
