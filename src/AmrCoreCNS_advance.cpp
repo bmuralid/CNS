@@ -21,13 +21,13 @@
 using namespace amrex;
 
 /* time integration constants used `updatedq` */
-const std::array<amrex::Real, 2> const1 = {1.0, 0.5};
-const std::array<amrex::Real, 2> const2 = {0.0, 1.0};
 
 void
 AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
 
 {
+    const std::array<amrex::Real, 2> const1 = {1.0, 0.5};
+    const std::array<amrex::Real, 2> const2 = {0.0, 1.0};
     Vector< Array <MultiFab, AMREX_SPACEDIM>> fluxes(finest_level + 1);
     pyro::pyro<double> const lpyro = thermo;
 

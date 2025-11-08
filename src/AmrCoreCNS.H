@@ -52,6 +52,11 @@ public:
     void Cons2Prims(int opt);
 
     void Prims2Cons();
+    void Advance (amrex::Real time, amrex::Real dt);
+
+    void AdvanceSingleStage (amrex::Real time, amrex::Real dt, int istage);
+
+    amrex::Real ComputeTimeStep (amrex::Real time);
 
 private:
 
@@ -61,11 +66,6 @@ private:
 
     void AverageDownTo (int crse_lev, int opt);
 
-    amrex::Real ComputeTimeStep (amrex::Real time);
-
-    void Advance (amrex::Real time, amrex::Real dt);
-
-    void AdvanceSingleStage (amrex::Real time, amrex::Real dt, int istage);
 
     void FillPatch (int lev, int opt, amrex::Real time, amrex::MultiFab& mf, int  icomp, int ncomp);
 
@@ -94,7 +94,7 @@ private:
     // read checkpoint file from disk
     void ReadCheckpointFile ();
 
-    void ComputeTimeStep ();
+    // void ComputeTimeStep ();
 
     void TimeStep (amrex::Real time);
 
