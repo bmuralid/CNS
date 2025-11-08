@@ -229,4 +229,3 @@ AmrCoreCNS::Advance (Real time, Real dt)
 /*         } */
 /*     } */
 }
-

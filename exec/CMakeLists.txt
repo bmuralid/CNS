@@ -1,6 +1,10 @@
+
+if (ENABLE_CUDA)
+    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/main.cpp" PROPERTIES LANGUAGE CUDA)
+endif()
+
 add_executable("cns" "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 target_link_libraries("cns"
     PRIVATE
     ${EXEC_NAME})
-
