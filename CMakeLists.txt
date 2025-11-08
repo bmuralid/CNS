@@ -25,9 +25,12 @@ endif()
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 
 message(${CMAKE_CXX_COMPILER_ID})
-
 option(USE_MPI "Enable MPI" ON)
-
+option(ENABLE_CUDA "Enable CUDA support" ON)
+if (ENABLE_CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    enable_language(CUDA)
+endif()
 # Set compiler options
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -54,6 +57,26 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(exec)
+get_target_property(cns_sources AMReX::amrex SOURCES)
+
+if (ENABLE_CUDA)
+    # set_source_files_properties(${cns_sources} PROPERTIES LANGUAGE CUDA)
+    if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        message(STATUS "No CUDA architectures specified. Native will be used.")
+        set(CMAKE_CUDA_ARCHITECTURES native)
+    endif()
+    set_target_properties(${EXEC_NAME} PROPERTIES
+                          CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}
+                          CUDA_SEPARABLE_COMPILATION ON)
+    target_compile_features(${EXEC_NAME} PRIVATE cuda_std_17)
+    target_compile_options(${EXEC_NAME} PRIVATE
+                           $<$<COMPILE_LANGUAGE:CUDA>:-m64>
+                           $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+                           $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>
+                           $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math>)
+    target_link_libraries(${EXEC_NAME} PRIVATE CUDA::cudart)
+endif()
+
 
 if(ENABLE_TESTING)
     include(CTest)

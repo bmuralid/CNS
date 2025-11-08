@@ -19,7 +19,7 @@ WORKSPACE: Path = Path(__file__).parent
 MD5: Optional[str] = None
 BUILD_PATH: Optional[Path] = None
 INSTALL_PATH: Optional[Path] = None
-AMREX_ROOT_DIR = Path(__file__).parent/"./extern/amrex/install/gcc-9"
+AMREX_ROOT_DIR = Path(__file__).parent/"./extern/amrex/install/nvhpc"
 
 os.environ["AMREX_ROOT_DIR"] = str(AMREX_ROOT_DIR)
 
@@ -92,18 +92,39 @@ def load_env(c):
         print(f"# No .env file found at {env_file}, skipping.")
 
 @invoke.task
-def config(c, build_type:str="RelWithDebInfo"):
+def config(c, build_type:str="RelWithDebInfo", compiler:str="gcc-9"):
     """Run cmake configure."""
-    do_config(c, build_type=build_type)
+    do_config(c, build_type=build_type,compiler=compiler)
 
 
-def do_config(c, build_type:str="RelWithDebInfo"):
+def do_config(c, build_type:str="RelWithDebInfo", compiler:str="gcc-9"):
     build_path = get_build_path()
     build_path.mkdir(parents=True, exist_ok=True)
+    match compiler:
+        case "gcc-9":
+            # os.environ["CC"] = "gcc-9"
+            # os.environ["CXX"] = "g++-9"
+            # os.environ["FC"] = "gfortran-9"
+            CC = "gcc-9"
+            CXX = "g++-9"
+            FC = "gfortran-9"
+
+        case "nvhpc":
+            CC = "nvc"
+            CXX = "nvc++"
+            FC = "nvfortran"
+            os.environ["CC"] = "nvc"
+            os.environ["CXX"] = "nvc++"
+            os.environ["FC"] = "nvfortran"
+        case _:
+            CC = "gcc-9"
+            CXX = "g++-9"
+            FC = "gfortran-9"
+            print(f"Warning: Unknown compiler '{compiler}'. Using system default.")
     cmd = [
-        "CXX=g++-9",
-        "CC=gcc-9",
-        "FC=gfortran-9",
+        f"CXX={CXX}",
+        f"CC={CC}",
+        f"FC={FC}",
         "cmake",
         "-S",
         str(SRC_PATH),
@@ -111,6 +132,7 @@ def do_config(c, build_type:str="RelWithDebInfo"):
         str(build_path),
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=1",
+        "-DAMReX_GPU_BACKEND=CUDA",
     ]
     c.run(" ".join(cmd), pty=True)
 
