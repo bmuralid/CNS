@@ -6,7 +6,7 @@
 #include "pyro.H"
 #include "CNS_index_macros.H"
 
-AMREX_GPU_HOST_DEVICE
+AMREX_GPU_DEVICE
 AMREX_FORCE_INLINE
 void
 cns_ctoprim (int i, int j, int k,
@@ -51,7 +51,7 @@ cns_ctoprim (int i, int j, int k,
 }
 
 
-AMREX_GPU_HOST_DEVICE
+AMREX_GPU_DEVICE
 AMREX_FORCE_INLINE
 void
 cns_primtoc (int i, int j, int k,
@@ -96,7 +96,7 @@ cns_primtoc (int i, int j, int k,
     }
 }
 
-AMREX_GPU_HOST_DEVICE
+AMREX_GPU_DEVICE
 AMREX_FORCE_INLINE
 void
 primtoc (amrex::GpuArray<amrex::Real, NPRIM> const& prims,
@@ -131,7 +131,7 @@ primtoc (amrex::GpuArray<amrex::Real, NPRIM> const& prims,
     }
 }
 
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real
 compute_sos(
         amrex::GpuArray<amrex::Real, NPRIM> const&  prims,

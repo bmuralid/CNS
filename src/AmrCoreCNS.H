@@ -48,7 +48,7 @@ public:
 
     void Evolve ();
 
-    static pyro::pyro<double> thermo;
+    static inline pyro::pyro<double> thermo;
     void Cons2Prims(int opt);
 
     void Prims2Cons();
