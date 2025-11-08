@@ -118,7 +118,7 @@ compute_flux_3D(int idir,
     flux[3] = q[URHO] * u[3] * u[idir + 1];
     flux[4] = u[idir + 1] * (q[UEINT] + u[QPRES]);
     for (int n = 0; n < NSP; ++n) {
-        flux[5 + n] = q[URHO] * u[idir + 1] * u[QTEMP + 1 + n];
+        flux[5 + n] = q[UEINT+1+n] * u[idir + 1];
     }
     flux[idir + 1] += u[QPRES];
 }
@@ -152,7 +152,7 @@ compute_riemann_flux(
     Real a2 = amrex::min(uleft[idir + 1] - cl, uright[idir + 1] - cr, Real(0.0));
     for(int icomp = 0; icomp < NCONS; ++icomp){
         flux[icomp] = (a1 * fluxleft[icomp] - a2 * fluxright[icomp] +
-                       a1 * a2 * (qright[icomp] - qleft[icomp])) / (a1 - a2);
+                a1 * a2 * (qright[icomp] - qleft[icomp])) / (a1 - a2);
     }
 
 //     // This function should compute the flux based on the left and right states
@@ -169,7 +169,8 @@ flux_recon(int i, int j, int k,
         amrex::Array4<amrex::Real> const& deriv,
         const int idir,
         pyro::pyro<double> const& thermo,
-        amrex::Real dt, amrex::Real dx) noexcept
+        amrex::Real dt,
+        amrex::Real dx) noexcept
 {
     using amrex::Real;
     amrex::GpuArray<Real, NPRIM> uleft, uright;

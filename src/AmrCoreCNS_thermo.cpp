@@ -16,13 +16,14 @@ AmrCoreCNS::Cons2Prims (int opt)
     for (int lev = 0; lev <= finest_level; lev++) {
         MultiFab& mfprims =  qprims[lev];
         MultiFab& mfcons = opt == 0 ? qcons_old[lev] : qcons_new[lev];
+        const int ng = mfcons.nGrow();
 
         for (MFIter mfi(mfcons, TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Array4<Real> cfab = mfcons[mfi].array();
             Array4<Real> pfab = mfprims[mfi].array();
 
-            const Box& bx = mfi.growntilebox(1);
+            const Box& bx = mfi.growntilebox(ng);
 
             ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -44,12 +45,13 @@ AmrCoreCNS::Prims2Cons ()
         MultiFab& mfprims =  qprims[lev];
         MultiFab& mfcons = qcons_new[lev];
 
+        const int ng = mfcons.nGrow();
         for (MFIter mfi(mfcons, TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Array4<Real> cfab = mfcons[mfi].array();
             Array4<Real> pfab = mfprims[mfi].array();
 
-            const Box& bx = mfi.growntilebox(1);
+            const Box& bx = mfi.growntilebox(ng);
 
             ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept

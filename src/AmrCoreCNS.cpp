@@ -156,7 +156,7 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
     {
         Array4<Real> fab = state[mfi].array();
         Array4<Real> cfab = cons[mfi].array();
-        const Box& box = mfi.tilebox();
+        const Box& box = mfi.growntilebox(nghost);
 
         amrex::launch(box,
         [=] AMREX_GPU_DEVICE (Box const& tbx)
@@ -552,6 +552,8 @@ AmrCoreCNS::PlotFileVarNames () const
 #endif
     names.push_back("pressure");
     names.push_back("temperature");
+    names.push_back("Y01");
+    names.push_back("Y02");
     return names;
 }
 

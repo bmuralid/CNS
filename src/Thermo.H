@@ -10,7 +10,7 @@ AMREX_GPU_HOST_DEVICE
 AMREX_FORCE_INLINE
 void
 cns_ctoprim (int i, int j, int k,
-        amrex::Array4<amrex::Real> const& cons,
+        amrex::Array4<amrex::Real const> const& cons,
         amrex::Array4<amrex::Real> const& prims,
         pyro::pyro<double> const& thermo)
 {
@@ -55,7 +55,7 @@ AMREX_GPU_HOST_DEVICE
 AMREX_FORCE_INLINE
 void
 cns_primtoc (int i, int j, int k,
-        amrex::Array4<amrex::Real> const& prims,
+        amrex::Array4<amrex::Real const> const& prims,
         amrex::Array4<amrex::Real> const& cons,
         pyro::pyro<double> const& thermo)
 {

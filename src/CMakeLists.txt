@@ -17,7 +17,9 @@ set (OBJECTS_MPI ${CNS_OBJECTS} CACHE INTERNAL "Objects for MPI build")
 if(${USE_MPI})
    add_library(${EXEC_NAME} STATIC ${OBJECTS_MPI})
    set_target_properties (${EXEC_NAME} PROPERTIES COMPILE_DEFINITIONS "USE_MPI")
-   set_source_files_properties(${OBJECTS_MPI} PROPERTIES LANGUAGE CUDA)
+if(ENABLE_CUDA)
+    set_source_files_properties(${OBJECTS_MPI} PROPERTIES LANGUAGE CUDA)
+endif()
    target_link_libraries(${EXEC_NAME} PUBLIC AMReX::amrex)
    target_include_directories(${EXEC_NAME}
        PUBLIC

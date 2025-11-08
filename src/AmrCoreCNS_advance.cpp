@@ -21,6 +21,7 @@
 using namespace amrex;
 
 /* time integration constants used `updatedq` */
+static const int nstages = 1;
 
 void
 AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
@@ -134,12 +135,12 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
     // =======================================================
     // Average down the fluxes before using them to update phi
     // =======================================================
-    for (int lev = finest_level; lev > 0; lev--)
-    {
-       average_down_faces(amrex::GetArrOfConstPtrs(fluxes[lev  ]),
-                          amrex::GetArrOfPtrs     (fluxes[lev-1]),
-                          refRatio(lev-1), Geom(lev-1));
-    }
+    /* for (int lev = finest_level; lev > 0; lev--) */
+    /* { */
+    /*    average_down_faces(amrex::GetArrOfConstPtrs(fluxes[lev  ]), */
+    /*                       amrex::GetArrOfPtrs     (fluxes[lev-1]), */
+    /*                       refRatio(lev-1), Geom(lev-1)); */
+    /* } */
 
 
     /*----------------------------------------------------------------------*/
@@ -157,7 +158,7 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
 #endif
         {
             FArrayBox tmpfab;
-            for (MFIter mfi(qprims[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            for (MFIter mfi(qprims[lev], false); mfi.isValid(); ++mfi)
             {
                 Array4<Real> dqfab = mfdq[mfi].array();
                 Array4<Real> qnew = mfnew[mfi].array();
@@ -189,7 +190,7 @@ AmrCoreCNS::Advance (Real time, Real dt)
         std::swap(qcons_old[lev], qcons_new[lev]);
     }
 
-    for (int istage=0; istage<1; istage++){
+    for (int istage=0; istage < nstages; istage++){
         // Need to call BC function here for primitives
         AdvanceSingleStage(time, dt, istage);
         AverageDown(1);
