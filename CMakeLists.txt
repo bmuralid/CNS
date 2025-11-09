@@ -1,5 +1,18 @@
 cmake_minimum_required(VERSION 3.22)
 
+find_program(CCACHE_PROGRAM ccache)
+
+# If ccache is found, configure CMake to use it as a compiler launcher
+if(CCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    # Add other languages if needed, e.g., CMAKE_CUDA_COMPILER_LAUNCHER
+    message(STATUS "Ccache found and enabled: ${CCACHE_PROGRAM}")
+else()
+    message(STATUS "Ccache not found. Compilation will proceed without caching.")
+endif()
+
+
 project(
     "amrex_cns"
     VERSION 0.0.0
@@ -26,7 +39,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 
 message(${CMAKE_CXX_COMPILER_ID})
 option(USE_MPI "Enable MPI" ON)
-option(ENABLE_CUDA "Enable CUDA support" ON)
+option(ENABLE_CUDA "Enable CUDA support" OFF)
 if (ENABLE_CUDA)
     find_package(CUDAToolkit REQUIRED)
     enable_language(CUDA)
@@ -35,7 +48,7 @@ endif()
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
       # add_compile_options(-g -Wall -Wextra -O0 -Wpedantic -Wshadow -Wconversion -fsanitize=address,undefined )
-      add_compile_options(-g -Wall -Wextra -O0 )
+      add_compile_options(-g -Wall -Wextra -O0)
    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
        add_compile_options(-Wall -Wextra -O2 -g)
    else()

@@ -187,6 +187,7 @@ AmrCoreCNS::Advance (Real time, Real dt)
 {
 
     for (int lev=0; lev <= finest_level; lev++){
+        qcons_old[lev].setVal(Real(0.0));
         std::swap(qcons_old[lev], qcons_new[lev]);
     }
 
