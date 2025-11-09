@@ -53,6 +53,8 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
                      Real dtdy = dt/dx[1];,
                      Real dtdz = dt/dx[2]);
         // amrex::Print() << qprims[lev].boxArray() <<"\n";
+        // Fill the boundary and also calls the boundary condition update
+        FillPatch(lev, 2, time, mfprims, 0, mfprims.nComp());
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -192,7 +194,6 @@ AmrCoreCNS::Advance (Real time, Real dt)
     }
 
     for (int istage=0; istage < nstages; istage++){
-        // Need to call BC function here for primitives
         AdvanceSingleStage(time, dt, istage);
         AverageDown(1);
         Cons2Prims(1);

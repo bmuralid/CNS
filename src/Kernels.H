@@ -156,9 +156,9 @@ compute_riemann_flux(
     }
 
 //     // This function should compute the flux based on the left and right states
-//     for(int icomp = 0; icomp < NCONS; ++icomp){
-//         flux[icomp] = Real(0.0);
-//     }
+     // for(int icomp = 0; icomp < NCONS; ++icomp){
+     //     flux[icomp] = fluxleft[icomp];
+     // }
 }
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
@@ -181,8 +181,8 @@ flux_recon(int i, int j, int k,
     const int k1 = idir== 2 ? 1 : 0;
     // Perform reconstruction of the left and right states using the derivative information
     for(int icomp = 0; icomp < NPRIM; ++icomp){
-        uleft[icomp]  = prims(i-i1, j-j1, k-k1, icomp); //+ Real(0.5) * deriv(i-i1, j-j1, k-k1, icomp) * dx;
-        uright[icomp] = prims(i, j, k, icomp); //- Real(0.5) * deriv(i, j, k, icomp) * dx;
+        uleft[icomp]  = prims(i-i1, j-j1, k-k1, icomp) + Real(0.5) * deriv(i-i1, j-j1, k-k1, icomp) * dx;
+        uright[icomp] = prims(i, j, k, icomp) - Real(0.5) * deriv(i, j, k, icomp) * dx;
     }
 
     compute_riemann_flux(uleft, uright, idir, flux, thermo);
@@ -246,7 +246,7 @@ computedq(int i, int j, int k,
         dq(i, j, k, icomp) = -dt *( (fluxx(i+1, j, k, icomp) - fluxx(i, j, k, icomp))*dxinv +
                 (fluxy(i, j+1, k, icomp) - fluxy(i, j, k, icomp)) * dyinv +
                 (fluxz(i, j, k+1, icomp) - fluxz(i, j, k, icomp)) * dzinv);
-        // dq(i, j, k, icomp) = (Real) 0.0;
+        /* dq(i, j, k, icomp) = (Real) 0.0; */
     }
 }
 
