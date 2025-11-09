@@ -131,9 +131,10 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
     const int ncomp_prims = NPRIM; // [\rho, u, v, w, P, T]
     const int nghost = 2;
 
-    qcons_new[lev].define(ba, dm, ncomp_cons, nghost);
-    qcons_old[lev].define(ba, dm, ncomp_cons, nghost);
-    dq[lev].define(ba, dm, ncomp_cons, nghost);
+    qcons_new[lev].define(ba, dm, ncomp_cons, 0);
+    qcons_old[lev].define(ba, dm, ncomp_cons, 0);
+    // 1 ghost cell maybe required for charBC
+    dq[lev].define(ba, dm, ncomp_cons, 1);
 
     qprims[lev].define(ba, dm, ncomp_prims, nghost);
     phi[lev].define(ba, dm, 1, nghost);
@@ -156,7 +157,8 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
     {
         Array4<Real> fab = state[mfi].array();
         Array4<Real> cfab = cons[mfi].array();
-        const Box& box = mfi.growntilebox(nghost);
+        const Box& box = mfi.tilebox();
+        // const Box& box = mfi.growntilebox(nghost);
 
         amrex::launch(box,
         [=] AMREX_GPU_DEVICE (Box const& tbx)
@@ -218,9 +220,9 @@ AmrCoreCNS::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
     const int ncomp_prims = qprims[lev-1].nComp(); // [\rho, u, v, w, P, T]
     const int nghost = qcons_new[lev-1].nGrow();
 
-    qcons_new[lev].define(ba, dm, ncomp_cons, nghost);
-    qcons_old[lev].define(ba, dm, ncomp_cons, nghost);
-    dq[lev].define(ba, dm, ncomp_cons, nghost);
+    qcons_new[lev].define(ba, dm, ncomp_cons, 0);
+    qcons_old[lev].define(ba, dm, ncomp_cons, 0);
+    dq[lev].define(ba, dm, ncomp_cons, 1);
     qprims[lev].define(ba, dm, ncomp_prims, nghost);
     phi[lev].define(ba, dm, 1, nghost);
     rhs[lev].define(ba, dm, 1, nghost);
@@ -257,8 +259,8 @@ AmrCoreCNS::RemakeLevel (int lev, Real time, const BoxArray& ba,
     const int ncomp_prims = qprims[lev].nComp();
     const int nghost = qcons_new[lev].nGrow();
 
-    MultiFab new_qcons(ba, dm, ncomp_cons, nghost);
-    MultiFab new_qprims(ba, dm, ncomp_prims, nghost);
+    MultiFab new_qcons(ba, dm, ncomp_cons, 0);
+    MultiFab new_qprims(ba, dm, ncomp_prims, 0);
 
     FillPatch(lev, 1, time, new_qcons, 0, ncomp_cons);
     FillPatch(lev, 2, time, new_qprims, 0, ncomp_prims);

@@ -198,37 +198,4 @@ AmrCoreCNS::Advance (Real time, Real dt)
         AverageDown(1);
         Cons2Prims(1);
     }
-
-    /* to compute the fluxes with refluxing */
-/*     for (int lev = 0; lev <= finest_level; lev++) { */
-/*         MultiFab& mfprims =  qprims[lev]; */
-/*         MultiFab& mfcons = qcons_new[lev]; */
-
-/*         for (MFIter mfi(mfcons, TilingIfNotGPU()); mfi.isValid(); ++mfi) */
-/*         { */
-/*             Array4<Real> cfab = mfcons[mfi].array(); */
-/*             Array4<Real> pfab = mfprims[mfi].array(); */
-
-
-
-/*             const Box& bx = mfi.growntilebox(1); */
-
-/*             FArrayBox derv(bx, 3, The_Async_Arena()); */
-
-/*             Array4<Real> darr = derv.array(); */
-
-/*             // NTBC: Check if this is needed */
-/*             /1* const Box& gbx = amrex::grow(bx, 1); *1/ */
-
-/*             ParallelFor(bx, */
-/*             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept */
-/*             { */
-/*                 cns_deriv(i, j, k, cfab, darr); */
-
-
-/*             }); */
-
-
-/*         } */
-/*     } */
 }

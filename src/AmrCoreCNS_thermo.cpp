@@ -16,7 +16,7 @@ AmrCoreCNS::Cons2Prims (int opt)
     for (int lev = 0; lev <= finest_level; lev++) {
         MultiFab& mfprims =  qprims[lev];
         MultiFab& mfcons = opt == 0 ? qcons_old[lev] : qcons_new[lev];
-        const int ng = mfcons.nGrow();
+        // const int ng = mfcons.nGrow();
         // mfcons.FillBoundary(Geom(lev).periodicity());
 
         for (MFIter mfi(mfcons, TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -47,7 +47,7 @@ AmrCoreCNS::Prims2Cons ()
         MultiFab& mfprims =  qprims[lev];
         MultiFab& mfcons = qcons_new[lev];
 
-        const int ng = mfcons.nGrow();
+        // const int ng = mfcons.nGrow();
         for (MFIter mfi(mfcons, TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Array4<Real> cfab = mfcons[mfi].array();
