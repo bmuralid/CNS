@@ -21,7 +21,7 @@
 using namespace amrex;
 
 /* time integration constants used `updatedq` */
-static const int nstages = 1;
+static const int nstages = 2;
 
 void
 AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
