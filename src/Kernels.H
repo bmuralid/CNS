@@ -28,32 +28,31 @@ cns_computedt(int i, int j, int k,
     Real uz = prims(i, j, k, QW);
 
     std::array<double, NSP> species_massfractions = {0.0};
-    Real sumY = 0.0;
     for (int n = 0; n < thermo.num_species; ++n) {
         species_massfractions[n] = prims(i, j, k, QY1 + n);
-        sumY += species_massfractions[n];
-    }
-    // Normalize mass fractions
-    for (int n = 0; n < thermo.num_species; ++n) {
-        species_massfractions[n] /= sumY;
     }
     Real temperature = prims(i, j, k, QTEMP);
 
-    Real c = sqrt(thermo.get_mixture_specific_heat_cp_mass(temperature, species_massfractions) *
+    Real c = (thermo.get_mixture_specific_heat_cp_mass(temperature, species_massfractions) *
                   thermo.get_specific_gas_constant(species_massfractions) /
                   thermo.get_mixture_specific_heat_cv_mass(temperature, species_massfractions) *
                   temperature);
+    c = sqrt(amrex::max(c, 1.0e-10));
+
     Real dt_min = Real(1.0e10);
+    Real courno = Real(0.0);
 #if (AMREX_SPACEDIM == 2)
     Real dt_x = dx[0] / (std::abs(ux) + c);
     Real dt_y = dx[1] / (std::abs(uy) + c);
-    dt_min = amrex::min(dt_x, dt_y);
+    courno = (Real)1.0/dt_x + (Real)1.0/dt_y;
+    dt_min = (Real)1.0/courno;
+    /* dt_min = amrex::min(dt_x, dt_y); */
 #else
     Real dt_x = dx[0] / (std::abs(ux) + c);
     Real dt_y = dx[1] / (std::abs(uy) + c);
     Real dt_z = dx[2] / (std::abs(uz) + c);
-    dt_min = amrex::min(dt_x, dt_y);
-    dt_min = amrex::min(dt_min, dt_z);
+    courno = (Real)1.0/dt_x + (Real)1.0/dt_y + (Real)1.0/dt_z;
+    dt_min = (Real)1.0/courno; //amrex::min(dt_min, dt_z);
 #endif
     return dt_min;
 }

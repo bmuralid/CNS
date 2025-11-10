@@ -27,10 +27,13 @@ initdata(amrex::Box const& bx, amrex::Array4<amrex::Real> const& fab,
 #else
                 Real z = 0.0;
 #endif
-
+                Real r = sqrt((x - (Real)0.5) * (x - (Real)0.5)
+                             +(y - (Real)0.5) * (y - (Real)0.5)
+                             +(z - (Real)0.5) * (z - (Real)0.5)) ;
                 // Initialize primitive variables: [rho, u, v, w, P, T]
                 // Simple initialization - uniform density and pressure
-                fab(i,j,k,0) = 1.225;  // density
+
+                fab(i,j,k,0) = r < (Real) 0.1 ? (Real) 11.72 : (Real) 1.72;  // density
                 fab(i,j,k,1) = 0.0;  // u velocity
                 fab(i,j,k,2) = 0.0;  // v velocity
 #if (AMREX_SPACEDIM == 3)

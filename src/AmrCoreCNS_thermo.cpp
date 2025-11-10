@@ -19,7 +19,7 @@ AmrCoreCNS::Cons2Prims (int opt)
         // const int ng = mfcons.nGrow();
         // mfcons.FillBoundary(Geom(lev).periodicity());
 
-        for (MFIter mfi(mfcons, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        for (MFIter mfi(mfcons, false); mfi.isValid(); ++mfi)
         {
             Array4<Real> cfab = mfcons[mfi].array();
             Array4<Real> pfab = mfprims[mfi].array();

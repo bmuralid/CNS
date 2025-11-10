@@ -3,6 +3,7 @@
 
 #include <AMReX_Array4.H>
 #include <array>
+#include <AMReX_Print.H>
 #include "pyro.H"
 #include "CNS_index_macros.H"
 
@@ -35,11 +36,18 @@ cns_ctoprim (int i, int j, int k,
     Real ei = (cons(i, j, k, UEINT) - kineng) * rhoinv;
 
     std::array<double, NSP> species_massfractions = {0.767, 0.233}; // default values
+    Real sumY = Real(0.0);
     for (int n = 0; n < thermo.num_species; ++n) {
         species_massfractions[n] = cons(i, j, k, UEINT + 1 + n) * rhoinv;
+        species_massfractions[n] = amrex::max(species_massfractions[n], Real(0.0));
+        species_massfractions[n] = amrex::min(species_massfractions[n], Real(1.0));
+        sumY += species_massfractions[n];
+    }
+    // Normalize mass fractions
+    for (int n = 0; n < thermo.num_species; ++n) {
+        species_massfractions[n] /= sumY;
     }
     Real temperature = thermo.get_temperature(ei, prims(i, j, k, QTEMP), species_massfractions);
-
     Real pressure = thermo.get_pressure(rho, temperature, species_massfractions);
 
     prims(i, j, k, QRHO) = rho;
@@ -74,6 +82,8 @@ cns_primtoc (int i, int j, int k,
     Real sumY = 0.0;
     for (int n = 0; n < thermo.num_species; ++n) {
         species_massfractions[n] = prims(i, j, k, QTEMP + 1 + n);
+        species_massfractions[n] = amrex::max(species_massfractions[n], Real(0.0));
+        species_massfractions[n] = amrex::min(species_massfractions[n], Real(1.0));
         sumY += species_massfractions[n];
     }
     // Normalize mass fractions
@@ -114,9 +124,19 @@ primtoc (amrex::GpuArray<amrex::Real, NPRIM> const& prims,
 
     Real kineng = Real(0.5) * rho * (ux*ux + uy*uy + uz*uz);
     std::array<double, NSP> species_massfractions = {0.767, 0.233}; // default values
+    Real sumY = (Real) 0.0;
     for (int n = 0; n < thermo.num_species; ++n) {
         species_massfractions[n] = prims[QTEMP + 1 + n];
+        species_massfractions[n] = amrex::max(species_massfractions[n], Real(0.0));
+        species_massfractions[n] = amrex::min(species_massfractions[n], Real(1.0));
+        sumY += species_massfractions[n];
     }
+    // Normalize mass fractions
+    for (int n = 0; n < thermo.num_species; ++n) {
+        species_massfractions[n] /= sumY;
+    }
+    // Recompute pressure from temperature to ensure consistency
+    pressure = thermo.get_pressure(rho, temperature, species_massfractions);
 
     Real ei = thermo.get_mixture_internal_energy_mass(temperature, species_massfractions);
     Real eint = ei * rho;
@@ -144,14 +164,8 @@ compute_sos(
     Real uz = prims[QW];
     Real temperature = prims[QTEMP];
     std::array<double, NSP> species_massfractions = {0.0};
-    Real sumY = 0.0;
     for (int n = 0; n < thermo.num_species; ++n) {
         species_massfractions[n] = prims[QTEMP + 1 + n];
-        sumY += species_massfractions[n];
-    }
-    // Normalize mass fractions
-    for (int n = 0; n < thermo.num_species; ++n) {
-        species_massfractions[n] /= sumY;
     }
     Real c = sqrt(thermo.get_mixture_specific_heat_cp_mass(temperature, species_massfractions) *
                   thermo.get_specific_gas_constant(species_massfractions) /
