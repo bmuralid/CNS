@@ -157,8 +157,8 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
     {
         Array4<Real> fab = state[mfi].array();
         Array4<Real> cfab = cons[mfi].array();
-        const Box& box = mfi.tilebox();
-        // const Box& box = mfi.growntilebox(nghost);
+        // const Box& box = mfi.tilebox();
+        const Box& box = mfi.growntilebox(nghost);
 
         amrex::launch(box,
         [=] AMREX_GPU_DEVICE (Box const& tbx)
@@ -205,7 +205,8 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
         // auto gshop = EB2::makeShop(sphere);
         // EB2::Build(gshop, Geom(lev), 0, 0, 4);
         const Vector<int> ng_ebs{1,1,1};
-        ebfactory[lev] = amrex::makeEBFabFactory(Geom(lev), ba, dm, ng_ebs, EBSupport::full);
+        ebfactory[lev] = nullptr;
+        /* ebfactory[lev] = amrex::makeEBFabFactory(Geom(lev), ba, dm, ng_ebs, EBSupport::full); */
     }
 }
 
@@ -228,6 +229,9 @@ AmrCoreCNS::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
     rhs[lev].define(ba, dm, 1, nghost);
 
     setVal(dq[lev], 0.0);
+    setVal(qcons_old[lev], 0.0);
+    setVal(phi[lev], 0.0);
+    setVal(rhs[lev], 0.0);
 
     t_new[lev] = time;
     t_old[lev] = time - 1.e200;
@@ -236,6 +240,7 @@ AmrCoreCNS::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
         flux_reg[lev].reset(new FluxRegister(ba, dm, refRatio(lev-1), lev, ncomp_cons));
     }
 
+    FillCoarsePatch(lev, 1, time, qcons_new[lev], 0, ncomp_cons); // only need to copy over qprims
     FillCoarsePatch(lev, 2, time, qprims[lev], 0, ncomp_prims); // only need to copy over qprims
 
     // Build EB geometry (sphere) and factory on this level as well
@@ -244,7 +249,8 @@ AmrCoreCNS::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
         // auto gshop = EB2::makeShop(sphere);
         // EB2::Build(gshop, Geom(lev), 0, 0, 4);
         const Vector<int> ng_ebs{1,1,1};
-        ebfactory[lev] = amrex::makeEBFabFactory(Geom(lev), ba, dm, ng_ebs, EBSupport::full);
+        ebfactory[lev] = nullptr;
+        /* ebfactory[lev] = amrex::makeEBFabFactory(Geom(lev), ba, dm, ng_ebs, EBSupport::full); */
     }
 }
 
@@ -257,16 +263,28 @@ AmrCoreCNS::RemakeLevel (int lev, Real time, const BoxArray& ba,
 {
     const int ncomp_cons = qcons_new[lev].nComp();
     const int ncomp_prims = qprims[lev].nComp();
-    const int nghost = qcons_new[lev].nGrow();
+    const int nghost = qprims[lev].nGrow();
 
     MultiFab new_qcons(ba, dm, ncomp_cons, 0);
-    MultiFab new_qprims(ba, dm, ncomp_prims, 0);
+    MultiFab new_qcons_old(ba, dm, ncomp_cons, 0);
+    MultiFab new_dq(ba, dm, ncomp_cons, 0);
+    MultiFab new_qprims(ba, dm, ncomp_prims, nghost);
+    MultiFab new_phi(ba, dm, 1, nghost);
+    MultiFab new_rhs(ba, dm, 1, nghost);
 
     FillPatch(lev, 1, time, new_qcons, 0, ncomp_cons);
     FillPatch(lev, 2, time, new_qprims, 0, ncomp_prims);
 
+    setVal(new_qcons_old, 0.0);
+    setVal(new_dq, 0.0);
+    setVal(new_phi, 0.0);
+
     std::swap(new_qcons, qcons_new[lev]);
     std::swap(new_qprims, qprims[lev]);
+    std::swap(new_qcons_old, qcons_old[lev]);
+    std::swap(new_dq, dq[lev]);
+    std::swap(new_phi, phi[lev]);
+    std::swap(new_rhs, rhs[lev]);
 
     t_new[lev] = time;
     t_old[lev] = time - 1.e200;
@@ -320,6 +338,8 @@ AmrCoreCNS::ErrorEst (int lev, TagBoxArray& tags, Real /*time*/, int /*ngrow*/)
     const int   tagval = TagBox::SET;
 
     const MultiFab& state = qprims[lev];
+    const auto dx = Geom(lev).CellSizeArray();
+    const amrex::GpuArray<Real, AMREX_SPACEDIM> dx_arr = {dx[0], dx[1], dx[2]};
 
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if(Gpu::notInLaunchRegion())
@@ -328,6 +348,8 @@ AmrCoreCNS::ErrorEst (int lev, TagBoxArray& tags, Real /*time*/, int /*ngrow*/)
 
         for (MFIter mfi(state,TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
+            // qprims has nghost=2, so we have enough ghost cells for second derivatives
+            // Only tag interior cells (tilebox), but can access ghost cells for computation
             const Box& bx  = mfi.tilebox();
             const auto statefab = state.array(mfi);
             const auto tagfab  = tags.array(mfi);
@@ -336,7 +358,7 @@ AmrCoreCNS::ErrorEst (int lev, TagBoxArray& tags, Real /*time*/, int /*ngrow*/)
             amrex::ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                state_error(i, j, k, tagfab, statefab, phierror, tagval);
+                state_error(i, j, k, tagfab, statefab, phierror, tagval, dx_arr);
             });
         }
     }
@@ -580,8 +602,8 @@ AmrCoreCNS::WritePlotFile () const
         MultiFab::Copy(tmp, phi[lev], 0, ncomp_q, 1, 0);
 
         // copy EB volume fraction if available
-        if (true) {
-        /* if (ebfactory[lev]) { */
+        /* if (true) { */
+        if (ebfactory[lev]) {
             MultiFab::Copy(tmp, ebfactory[lev]->getVolFrac(), 0, ncomp_q+1, 1, 0);
 
             // boundary area magnitude: sum of face area fracs as a simple scalar diagnostic

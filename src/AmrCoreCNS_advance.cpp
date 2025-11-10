@@ -60,7 +60,7 @@ AmrCoreCNS::AdvanceSingleStage (Real time, Real dt, int istage)
 #endif
         {
             FArrayBox tmpfab;
-            for (MFIter mfi(qprims[lev], false); mfi.isValid(); ++mfi)
+            for (MFIter mfi(qcons_new[lev], false); mfi.isValid(); ++mfi)
             {
                 Array4<Real> cfab = mfcons[mfi].array();
                 Array4<Real> pfab = mfprims[mfi].array();
