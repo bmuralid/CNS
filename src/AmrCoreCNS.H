@@ -54,6 +54,8 @@ public:
     void Prims2Cons();
     void Advance (amrex::Real time, amrex::Real dt);
 
+    void Sensor (amrex::Real time, amrex::Real dt);
+
     void AdvanceSingleStage (amrex::Real time, amrex::Real dt, int istage);
 
     amrex::Real ComputeTimeStep (amrex::Real time);

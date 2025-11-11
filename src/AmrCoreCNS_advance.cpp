@@ -16,6 +16,7 @@
 #include <AmrCoreCNS.H>
 #include <Thermo.H>
 #include <Kernels.H>
+#include <Tagging.H>
 
 #include <CNS_index_macros.H>
 using namespace amrex;
@@ -197,5 +198,38 @@ AmrCoreCNS::Advance (Real time, Real dt)
         AdvanceSingleStage(time, dt, istage);
         AverageDown(1);
         Cons2Prims(1);
+    }
+
+    Sensor(time, dt);
+}
+
+void
+AmrCoreCNS::Sensor (Real time, Real dt)
+{
+    // Compute the tagging field phi based on updated qprims
+    for (int lev = 0; lev <= finest_level; ++lev)
+    {
+        MultiFab& state = qprims[lev];
+        MultiFab& tag = phi[lev];
+        const auto dx = geom[lev].CellSizeArray();
+        const amrex::GpuArray<Real, AMREX_SPACEDIM> dx_arr = {dx[0], dx[1], dx[2]};
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if(Gpu::notInLaunchRegion())
+#endif
+        {
+            for (MFIter mfi(state,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                // qprims has nghost=2, so we have enough ghost cells for second derivatives
+                // Only tag interior cells (tilebox), but can access ghost cells for computation
+                const Box& bx  = mfi.tilebox();
+                const auto statefab = state.array(mfi);
+                auto tagfab  = tag.array(mfi);
+                amrex::ParallelFor(bx,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    compute_sensor(i, j, k, tagfab, statefab, dx_arr);
+                });
+            }
+        }
     }
 }

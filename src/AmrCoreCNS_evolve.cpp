@@ -40,7 +40,7 @@ AmrCoreCNS:: Evolve ()
 
         if (max_level > 0 && regrid_int > 0)
         {
-            if (istep[0] % regrid_int == 0)
+            if ((step+1) % regrid_int == 0)
             {
                 regrid(0, cur_time);
             }

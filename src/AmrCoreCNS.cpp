@@ -194,8 +194,8 @@ void AmrCoreCNS::MakeNewLevelFromScratch(int lev, Real time, const BoxArray& ba,
 #else
             const Real z = Real(0.0);
 #endif
-            const Real r = std::sqrt(x*x + y*y + z*z);
-            pfab(i,j,k,0) = r - Real(0.5);
+            const Real r = std::sqrt((x-0.5)*(x-0.5) + (y-0.5)*(y-0.5) + (z-0.5)*(z-0.5));
+            pfab(i,j,k,0) = r > 0.05 && r < 0.15 ? 1.0 : 0.0;
         });
     }
 
@@ -334,10 +334,10 @@ AmrCoreCNS::ErrorEst (int lev, TagBoxArray& tags, Real /*time*/, int /*ngrow*/)
 
     if (lev >= phierr.size()) return;
 
-//    const int clearval = TagBox::CLEAR;
+    const int clearval = TagBox::CLEAR;
     const int   tagval = TagBox::SET;
 
-    const MultiFab& state = qprims[lev];
+    const MultiFab& state = phi[lev];
     const auto dx = Geom(lev).CellSizeArray();
     const amrex::GpuArray<Real, AMREX_SPACEDIM> dx_arr = {dx[0], dx[1], dx[2]};
 
@@ -358,7 +358,7 @@ AmrCoreCNS::ErrorEst (int lev, TagBoxArray& tags, Real /*time*/, int /*ngrow*/)
             amrex::ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                state_error(i, j, k, tagfab, statefab, phierror, tagval, dx_arr);
+                state_error(i, j, k, first, tagfab, statefab, phierror, tagval, clearval);
             });
         }
     }
