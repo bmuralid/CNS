@@ -2,7 +2,6 @@ set (SRCDIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set (CNS_OBJECTS
     ${SRCDIR}/initEB.cpp
-    ${SRCDIR}/pyro.cpp
     ${SRCDIR}/AmrCoreCNS.cpp
     ${SRCDIR}/AmrCoreCNS_evolve.cpp
     ${SRCDIR}/AmrCoreCNS_advance.cpp
