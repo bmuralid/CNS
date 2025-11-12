@@ -28,8 +28,8 @@ struct pyro
     using Species2T  = std::array<SpeciesT, num_species>;
     using ReactionsT = std::array<ContainerT, num_reactions>;
 
-    DataTypeT molecular_weights[2] = {DataTypeT(0.03125195324707794), DataTypeT(0.03569643749553795)};
-    DataTypeT inv_molecular_weights[2] = {DataTypeT(31.998), DataTypeT(28.014)};
+    DataTypeT molecular_weights[2] = {DataTypeT(31.998), DataTypeT(28.014)};
+    DataTypeT inv_molecular_weights[2] = {DataTypeT(0.03125195324707794), DataTypeT(0.03569643749553795)};
     DataTypeT gas_constant = 8314.46261815324;
     DataTypeT one_atm = 101325.0;
 
